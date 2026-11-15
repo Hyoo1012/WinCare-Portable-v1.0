@@ -1,0 +1,590 @@
+# WinCare Portable - v1.0
+# Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
+# Uso: inventario, auditoria y desinstalacion selectiva conservadora.
+# Nunca deshabilita Windows Update, Defender, servicios ni controladores.
+#requires -Version 5.1
+
+$ErrorActionPreference = 'Stop'
+if ($env:OS -ne 'Windows_NT') { throw 'Este programa solamente funciona en Windows.' }
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
+$script:Palette = @{
+    Bg = [System.Drawing.Color]::FromArgb(17, 24, 35)
+    Panel = [System.Drawing.Color]::FromArgb(28, 38, 52)
+    Text = [System.Drawing.Color]::FromArgb(238, 243, 249)
+    Muted = [System.Drawing.Color]::FromArgb(172, 184, 201)
+    Accent = [System.Drawing.Color]::FromArgb(37, 132, 221)
+    Border = [System.Drawing.Color]::FromArgb(52, 65, 84)
+}
+
+# Solamente estos nombres exactos Appx pueden quitarse por este programa.
+# El resto se consulta o se desinstala manualmente desde Configuracion de Windows.
+$script:OptionalApps = @{
+    'Microsoft.BingNews' = @('Bajo', 'Se pierde la aplicación de noticias.')
+    'Microsoft.BingWeather' = @('Bajo', 'Se pierde la aplicación del tiempo.')
+    'Microsoft.MicrosoftSolitaireCollection' = @('Bajo', 'Se eliminan juegos; podrían perderse datos locales.')
+    'Clipchamp.Clipchamp' = @('Bajo', 'Se elimina el editor de video Clipchamp.')
+    'Microsoft.Clipchamp' = @('Bajo', 'Se elimina el editor de video Clipchamp.')
+    'Microsoft.Getstarted' = @('Bajo', 'Se elimina la aplicación de introducción.')
+    'Microsoft.WindowsFeedbackHub' = @('Bajo', 'No podrás enviar comentarios desde Feedback Hub.')
+    'Microsoft.GetHelp' = @('Medio', 'Se elimina la aplicación de ayuda de Microsoft.')
+    'Microsoft.GamingApp' = @('Medio', 'Se afectan funciones y servicios de juegos Xbox.')
+    'Microsoft.XboxGamingOverlay' = @('Medio', 'Se pierde la superposición Xbox Game Bar.')
+    'Microsoft.XboxGameOverlay' = @('Medio', 'Se pierden algunas funciones de Xbox.')
+    'Microsoft.Xbox.TCUI' = @('Medio', 'Algunas funciones de inicio de sesión Xbox podrían fallar.')
+    'Microsoft.XboxIdentityProvider' = @('Medio', 'Algunos juegos y servicios Xbox podrían dejar de iniciar sesión.')
+    'Microsoft.XboxSpeechToTextOverlay' = @('Medio', 'Se pierde una función de accesibilidad de Xbox.')
+    'Microsoft.YourPhone' = @('Medio', 'Se pierde la vinculación de teléfono con Windows.')
+    'MSTeams' = @('Medio', 'Se elimina la aplicación de Teams, si corresponde a esta versión.')
+    'MicrosoftTeams' = @('Medio', 'Se elimina la aplicación de Teams, si corresponde a esta versión.')
+    'Microsoft.WindowsMaps' = @('Bajo', 'Se elimina la aplicación Mapas.')
+    'Microsoft.People' = @('Medio', 'Se elimina la aplicación Contactos.')
+    'Microsoft.OutlookForWindows' = @('Medio', 'Se elimina el nuevo Outlook; sus datos en la nube no se borran.')
+    'Microsoft.Copilot' = @('Medio', 'Se elimina la aplicación Copilot, si esta edición la incluye.')
+    'Microsoft.ZuneMusic' = @('Medio', 'Se elimina una aplicación de reproducción multimedia.')
+    'Microsoft.ZuneVideo' = @('Medio', 'Se elimina una aplicación de reproducción multimedia.')
+}
+
+$script:CoreAppPattern = '(?i)(Store|StorePurchase|DesktopAppInstaller|SecHealth|Defender|ShellExperienceHost|StartMenuExperienceHost|AAD\.BrokerPlugin|CloudExperienceHost|OOBENetwork|Windows\.Search|MicrosoftWindows\.Client\.|VCLibs|\.NET\.Native|WindowsAppRuntime|UI\.Xaml|Edge|WebView|WindowsTerminal|WindowsCalculator|WindowsNotepad|Windows\.Notepad|Windows\.Photos|WindowsCamera|LockApp|Credential|AccountsControl)'
+$script:CoreProgramPattern = '(?i)(\bWindows\b|Defender|Security|Antivirus|Firewall|\bUpdate\b|WebView|\.NET|Visual C\+\+|Redistributable|\bRuntime\b|\bDriver\b|Firmware|Chipset|\bBIOS\b|\bTPM\b|BitLocker|Realtek|NVIDIA|\bIntel\b|\bAMD\b|Qualcomm|\bVPN\b|Endpoint|Backup Agent|Recovery Agent|\bAgent\b|Bluetooth|\bWi-Fi\b|\bWLAN\b|PowerShell|SQL Server|Windows Installer|Device Management)'
+$script:Categories = @('Apps Store', 'Provisionadas', 'Programas', 'Características', 'Capacidades', 'Servicios', 'Controladores')
+$script:Tables = @{}
+$script:Grids = @{}
+$script:Warnings = New-Object 'System.Collections.Generic.List[string]'
+
+function Test-Administrator {
+    $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Resolve-OutputDirectory {
+    $candidates = @((Join-Path $PSScriptRoot 'Reportes'), (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WinCarePortable\Reportes'))
+    foreach ($candidate in $candidates) {
+        try {
+            if (-not (Test-Path -LiteralPath $candidate)) { New-Item -ItemType Directory -Path $candidate -Force | Out-Null }
+            $probe = Join-Path $candidate ('.escritura-' + [guid]::NewGuid().ToString('N'))
+            [IO.File]::WriteAllText($probe, 'ok')
+            Remove-Item -LiteralPath $probe -Force
+            return $candidate
+        } catch { }
+    }
+    throw 'No se pudo encontrar una carpeta donde guardar el inventario.'
+}
+
+function Write-Audit([string]$Message) {
+    try {
+        $root = Resolve-OutputDirectory
+        $path = Join-Path $root 'auditoria.txt'
+        Add-Content -LiteralPath $path -Encoding UTF8 -Value ("[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message)
+    } catch { }
+}
+
+function New-InventoryTable {
+    $table = New-Object System.Data.DataTable
+    foreach ($column in @('Tipo','Nombre','Versión','Fabricante','Estado','Riesgo','Acción','Detalle','Clave','DatoExtra')) {
+        [void]$table.Columns.Add($column, [string])
+    }
+    return ,$table
+}
+
+function Reset-Inventory {
+    foreach ($name in $script:Categories) {
+        if ($script:Tables.ContainsKey($name)) { $script:Tables[$name].Clear() }
+    }
+    $script:Warnings.Clear()
+}
+
+function Add-InventoryRecord(
+    [string]$Category, [string]$Type, [string]$Name, [string]$Version,
+    [string]$Publisher, [string]$State, [string]$Risk, [string]$Action,
+    [string]$Detail, [string]$Key, [string]$Extra = ''
+) {
+    $values = [object[]]@($Type,$Name,$Version,$Publisher,$State,$Risk,$Action,$Detail,$Key,$Extra)
+    [void]$script:Tables[$Category].Rows.Add($values)
+}
+
+function Get-AppxDisposition($App) {
+    $name = [string]$App.Name
+    $protected = ($name -match $script:CoreAppPattern)
+    if ($App.PSObject.Properties.Match('NonRemovable').Count -and $App.NonRemovable) { $protected = $true }
+    if ($App.PSObject.Properties.Match('IsFramework').Count -and $App.IsFramework) { $protected = $true }
+    if ($App.PSObject.Properties.Match('IsResourcePackage').Count -and $App.IsResourcePackage) { $protected = $true }
+    if ($protected) { return @('Protegido', 'Bloqueada', 'Componente protegido o dependencia de Windows. No se permite eliminar.') }
+    if ($script:OptionalApps.ContainsKey($name)) {
+        $entry = $script:OptionalApps[$name]
+        return @([string]$entry[0], 'Appx', [string]$entry[1])
+    }
+    return @('Revisar', 'Windows', 'Aplicación no incluida en la lista segura: desinstalar manualmente desde Configuración si corresponde.')
+}
+
+function Read-AppxInventory {
+    $packages = @(Get-AppxPackage -ErrorAction Stop | Sort-Object Name)
+    foreach ($pkg in $packages) {
+        $info = Get-AppxDisposition $pkg
+        Add-InventoryRecord 'Apps Store' 'Appx/MSIX' ([string]$pkg.Name) ([string]$pkg.Version) ([string]$pkg.Publisher) 'Instalada (usuario actual)' $info[0] $info[1] $info[2] ([string]$pkg.PackageFullName)
+    }
+}
+
+function Read-ProvisionedInventory {
+    foreach ($pkg in @(Get-AppxProvisionedPackage -Online -ErrorAction Stop | Sort-Object DisplayName)) {
+        $state = 'Preparada para usuarios nuevos'
+        $detail = 'Inventario informativo. No se modifica el aprovisionamiento de Windows.'
+        Add-InventoryRecord 'Provisionadas' 'Provisionada' ([string]$pkg.DisplayName) ([string]$pkg.Version) 'No especificado' $state 'Protegido' 'Consulta' $detail ([string]$pkg.PackageName)
+    }
+}
+
+function Read-ProgramInventory {
+    $roots = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKCU:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+    )
+    $seen = @{}
+    foreach ($root in $roots) {
+        if (-not (Test-Path -LiteralPath $root)) { continue }
+        foreach ($item in @(Get-ChildItem -LiteralPath $root -ErrorAction SilentlyContinue)) {
+            try {
+                $p = Get-ItemProperty -LiteralPath $item.PSPath -ErrorAction Stop
+                $name = [string]$p.DisplayName
+                if ([string]::IsNullOrWhiteSpace($name)) { continue }
+                if ($p.PSObject.Properties.Match('SystemComponent').Count -and [string]$p.SystemComponent -eq '1') { continue }
+                $key = [string]$item.PSChildName
+                $id = $name + '|' + [string]$p.DisplayVersion + '|' + [string]$p.Publisher
+                if ($seen.ContainsKey($id)) { continue }
+                $seen[$id] = $true
+                $publisher = [string]$p.Publisher
+                $msi = [string]$p.WindowsInstaller -eq '1' -and $key -match '^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$'
+                $essential = ($name -match $script:CoreProgramPattern) -or ($publisher -match '(?i)^(Microsoft Corporation|Microsoft|Intel Corporation|NVIDIA Corporation|Advanced Micro Devices|Realtek)\s*$')
+                $risk = 'Revisar'
+                $action = 'Windows'
+                $detail = 'Usa la opción Desinstalar de Windows. No se ejecutan comandos de desinstalación desconocidos.'
+                if ($essential) {
+                    $risk = 'Protegido'
+                    $action = 'Windows'
+                    $detail = 'Posible dependencia, controlador o software esencial. La herramienta no permite su eliminación automática.'
+                } elseif ($msi) {
+                    $risk = 'Medio'
+                    $action = 'MSI'
+                    $detail = 'MSI identificado. Puede borrar configuraciones y afectar programas que dependan de él.'
+                }
+                Add-InventoryRecord 'Programas' 'Win32' $name ([string]$p.DisplayVersion) $publisher 'Registrado' $risk $action $detail $key ([string]$item.PSPath)
+            } catch {
+                # Un elemento de registro ilegible no debe detener el inventario.
+            }
+        }
+    }
+}
+
+function Read-FeatureInventory {
+    foreach ($feature in @(Get-WindowsOptionalFeature -Online -ErrorAction Stop | Sort-Object FeatureName)) {
+        Add-InventoryRecord 'Características' 'Característica Windows' ([string]$feature.FeatureName) '' 'Microsoft' ([string]$feature.State) 'Protegido' 'Consulta' 'Solo lectura: desactivar componentes Windows puede romper funciones del sistema.' ([string]$feature.FeatureName)
+    }
+}
+
+function Read-CapabilityInventory {
+    foreach ($cap in @(Get-WindowsCapability -Online -ErrorAction Stop | Sort-Object Name)) {
+        Add-InventoryRecord 'Capacidades' 'Capability/FOD' ([string]$cap.Name) '' 'Microsoft' ([string]$cap.State) 'Protegido' 'Consulta' 'Solo lectura: capacidades de Windows y paquetes de idioma pueden ser dependencias.' ([string]$cap.Name)
+    }
+}
+
+function Read-ServiceInventory {
+    foreach ($svc in @(Get-CimInstance Win32_Service -ErrorAction Stop | Sort-Object DisplayName)) {
+        Add-InventoryRecord 'Servicios' 'Servicio' ([string]$svc.DisplayName) '' ([string]$svc.Name) ([string]$svc.State + ' / ' + [string]$svc.StartMode) 'Protegido' 'Consulta' 'Solo lectura: nunca se detienen, modifican o eliminan servicios desde esta herramienta.' ([string]$svc.Name)
+    }
+}
+
+function Read-DriverInventory {
+    foreach ($drv in @(Get-CimInstance Win32_PnPSignedDriver -ErrorAction Stop | Sort-Object DeviceName)) {
+        $display = [string]$drv.DeviceName
+        if ([string]::IsNullOrWhiteSpace($display)) { continue }
+        Add-InventoryRecord 'Controladores' 'Controlador PnP' $display ([string]$drv.DriverVersion) ([string]$drv.Manufacturer) ([string]$drv.InfName) 'Protegido' 'Consulta' 'Solo lectura: quitar un controlador puede dejar dispositivos sin funcionar.' ([string]$drv.DeviceID)
+    }
+}
+
+function Update-Detail {
+    # Evita eventos de seleccion prematuros durante el montaje de la interfaz.
+    if ($null -eq $script:DetailLabel -or $null -eq $script:RemoveButton -or $null -eq $script:TabControl) { return }
+    $script:DetailLabel.Text = 'Selecciona un elemento para ver sus consecuencias y el método disponible.'
+    $script:RemoveButton.Enabled = $false
+    if (-not $script:TabControl.SelectedTab) { return }
+    $grid = $script:Grids[$script:TabControl.SelectedTab.Text]
+    if (-not $grid -or $grid.SelectedRows.Count -eq 0) { return }
+    $row = $grid.SelectedRows[0]
+    if ($row.IsNewRow) { return }
+    $name = [string]$row.Cells['Nombre'].Value
+    $risk = [string]$row.Cells['Riesgo'].Value
+    $action = [string]$row.Cells['Acción'].Value
+    $detail = [string]$row.Cells['Detalle'].Value
+    $script:DetailLabel.Text = ('{0} | Riesgo: {1} | Método: {2}' + [Environment]::NewLine + '{3}') -f $name, $risk, $action, $detail
+    $script:RemoveButton.Enabled = $script:ChangeCheck.Checked -and ($action -in @('Appx','MSI'))
+}
+
+function Update-Search {
+    if (-not $script:TabControl.SelectedTab) { return }
+    $view = $script:Tables[$script:TabControl.SelectedTab.Text].DefaultView
+    $search = [string]$script:SearchBox.Text
+    $search = $search.Replace("'", "''").Replace('[','[[]').Replace(']','[]]').Replace('%','[%]').Replace('*','[*]')
+    if ($search.Length -eq 0) { $view.RowFilter = ''; return }
+    try {
+        $view.RowFilter = "[Nombre] LIKE '%$search%' OR [Fabricante] LIKE '%$search%' OR [Riesgo] LIKE '%$search%'"
+    } catch { $view.RowFilter = '' }
+}
+
+function Refresh-Inventory {
+    $script:ScanButton.Enabled = $false
+    $script:StatusLabel.Text = 'Analizando Windows... Algunas categorías requieren permisos de administrador.'
+    [System.Windows.Forms.Application]::DoEvents()
+    Reset-Inventory
+    $tasks = @(
+        @('Apps Store', { Read-AppxInventory }),
+        @('Provisionadas', { Read-ProvisionedInventory }),
+        @('Programas', { Read-ProgramInventory }),
+        @('Características', { Read-FeatureInventory }),
+        @('Capacidades', { Read-CapabilityInventory }),
+        @('Servicios', { Read-ServiceInventory }),
+        @('Controladores', { Read-DriverInventory })
+    )
+    foreach ($task in $tasks) {
+        $script:StatusLabel.Text = 'Analizando: ' + [string]$task[0] + ' ...'
+        [System.Windows.Forms.Application]::DoEvents()
+        try { & $task[1] }
+        catch { [void]$script:Warnings.Add(([string]$task[0] + ': ' + $_.Exception.Message)) }
+    }
+    try {
+        $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+        $script:SubtitleLabel.Text = ('{0} | Compilación {1} | Usuario {2} | Administración: {3}' -f $os.Caption,$os.BuildNumber,$env:USERNAME,(Test-Administrator))
+    } catch { }
+    $total = 0
+    foreach ($t in $script:Tables.Values) { $total += $t.Rows.Count }
+    $script:StatusLabel.Text = ('{0} elementos detectados. Advertencias: {1}. Modo de cambios: {2}.' -f $total,$script:Warnings.Count,$script:ChangeCheck.Checked)
+    $script:ScanButton.Enabled = $true
+    Update-Search
+    Update-Detail
+    Write-Audit ('ESCANEO: {0} elementos; {1} advertencias' -f $total,$script:Warnings.Count)
+    if ($script:Warnings.Count -gt 0) {
+        [void][System.Windows.Forms.MessageBox]::Show(($script:Warnings -join [Environment]::NewLine), 'Inventario parcial', 'OK', 'Warning')
+    }
+}
+
+function Export-Inventory {
+    try {
+        $base = Resolve-OutputDirectory
+        $folder = Join-Path $base (Get-Date -Format 'yyyyMMdd-HHmmss')
+        [void](New-Item -ItemType Directory -Path $folder -Force)
+        foreach ($name in $script:Categories) {
+            $records = foreach ($r in $script:Tables[$name].Rows) {
+                [pscustomobject]@{
+                    Tipo = [string]$r['Tipo']; Nombre = [string]$r['Nombre']; Version = [string]$r['Versión']
+                    Fabricante = [string]$r['Fabricante']; Estado = [string]$r['Estado']
+                    Riesgo = [string]$r['Riesgo']; Accion = [string]$r['Acción']; Detalle = [string]$r['Detalle']
+                }
+            }
+            if ($null -ne $records -and @($records).Count -gt 0) {
+                $filename = switch ($name) {
+                    'Apps Store' { 'apps-store.csv' }
+                    'Provisionadas' { 'apps-provisionadas.csv' }
+                    'Programas' { 'programas.csv' }
+                    'Características' { 'caracteristicas.csv' }
+                    'Capacidades' { 'capacidades.csv' }
+                    'Servicios' { 'servicios.csv' }
+                    'Controladores' { 'controladores.csv' }
+                }
+                $records | Export-Csv -LiteralPath (Join-Path $folder $filename) -NoTypeInformation -Encoding UTF8
+            }
+        }
+        ('WinCare Portable v1.0' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
+        Write-Audit ('EXPORTACION: ' + $folder)
+        [void][System.Windows.Forms.MessageBox]::Show(('Inventario exportado en:' + [Environment]::NewLine + $folder),'Exportación completada','OK','Information')
+        Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $folder + '"')
+    } catch {
+        [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'Error de exportación','OK','Error')
+    }
+}
+
+function Open-WindowsUninstall {
+    try { Start-Process 'ms-settings:appsfeatures' }
+    catch { Start-Process 'appwiz.cpl' }
+}
+
+function Uninstall-Selected {
+    if (-not $script:ChangeCheck.Checked) { return }
+    $tab = $script:TabControl.SelectedTab
+    if (-not $tab) { return }
+    $grid = $script:Grids[$tab.Text]
+    if ($grid.SelectedRows.Count -ne 1) {
+        [void][System.Windows.Forms.MessageBox]::Show('Selecciona solo una aplicación o programa por operación.','Selección','OK','Information')
+        return
+    }
+    $row = $grid.SelectedRows[0]
+    $name = [string]$row.Cells['Nombre'].Value
+    $action = [string]$row.Cells['Acción'].Value
+    $risk = [string]$row.Cells['Riesgo'].Value
+    $detail = [string]$row.Cells['Detalle'].Value
+    $key = [string]$row.Cells['Clave'].Value
+    $extra = [string]$row.Cells['DatoExtra'].Value
+    if ($action -notin @('Appx','MSI') -or $risk -eq 'Protegido') { return }
+
+    $message = "¿Confirmas la desinstalación?`r`n`r`nPrograma: $name`r`nRiesgo: $risk`r`nConsecuencia: $detail`r`n`r`nADVERTENCIA: podrías perder configuraciones, archivos propios de la aplicación o funciones dependientes. Esta herramienta NO garantiza reversión. Haz una copia de seguridad antes de continuar.`r`n`r`n¿Continuar?"
+    $answer = [System.Windows.Forms.MessageBox]::Show($message,'Confirmar eliminación: posible pérdida de funciones','YesNo','Warning','Button2')
+    if ($answer -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
+    $script:RemoveButton.Enabled = $false
+    $script:StatusLabel.Text = 'Desinstalando: ' + $name
+    [System.Windows.Forms.Application]::DoEvents()
+    try {
+        if ($action -eq 'Appx') {
+            $pkg = @(Get-AppxPackage -ErrorAction Stop | Where-Object { $_.PackageFullName -eq $key })
+            if ($pkg.Count -ne 1) { throw 'El paquete ya no existe o no puede identificarse sin ambigüedad.' }
+            $disposition = Get-AppxDisposition $pkg[0]
+            if ($disposition[1] -ne 'Appx' -or $pkg[0].Name -ne $name) { throw 'El paquete no está autorizado para desinstalación.' }
+            Remove-AppxPackage -Package $pkg[0].PackageFullName -ErrorAction Stop
+            Write-Audit ('APPX QUITADA (usuario actual): ' + $name + ' / ' + $key)
+            [void][System.Windows.Forms.MessageBox]::Show('Aplicación eliminada del usuario actual. No se modificó el aprovisionamiento para otros usuarios.','Operación completada','OK','Information')
+        } else {
+            # MSI: únicamente código GUID, validado de nuevo contra el registro.
+            if ($key -notmatch '^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$') { throw 'Identificador MSI no válido.' }
+            if (-not (Test-Path -LiteralPath $extra)) { throw 'El registro del desinstalador ya no existe.' }
+            $reg = Get-ItemProperty -LiteralPath $extra -ErrorAction Stop
+            if ([string]$reg.WindowsInstaller -ne '1' -or [string]$reg.DisplayName -ne $name) { throw 'La identidad del programa cambió: operación cancelada.' }
+            if ($name -match $script:CoreProgramPattern -or ([string]$reg.Publisher) -match '(?i)^(Microsoft Corporation|Microsoft|Intel Corporation|NVIDIA Corporation|Advanced Micro Devices|Realtek)\s*$') {
+                throw 'Programa protegido; utiliza el asistente de Windows si sabes exactamente qué estás quitando.'
+            }
+            $msi = Join-Path $env:WINDIR 'System32\msiexec.exe'
+            Write-Audit ('MSI SOLICITADO: ' + $name + ' / ' + $key)
+            $result = Start-Process -FilePath $msi -ArgumentList @('/x',$key) -PassThru -Wait -ErrorAction Stop
+            Write-Audit ('MSI FINALIZADO: ' + $name + ' / Código=' + $result.ExitCode)
+            if ($result.ExitCode -eq 3010) {
+                [void][System.Windows.Forms.MessageBox]::Show('El desinstalador solicita reiniciar Windows. Guarda tu trabajo antes.','Reinicio requerido','OK','Information')
+            } elseif ($result.ExitCode -eq 1602) {
+                [void][System.Windows.Forms.MessageBox]::Show('Desinstalación cancelada por el usuario.','Cancelada','OK','Information')
+            } elseif ($result.ExitCode -ne 0) {
+                throw ('El instalador devolvió el código ' + $result.ExitCode + '. Consulta el historial para diagnosticarlo.')
+            } else {
+                [void][System.Windows.Forms.MessageBox]::Show('El desinstalador terminó. Se actualizará el inventario.','Finalizado','OK','Information')
+            }
+        }
+        Refresh-Inventory
+    } catch {
+        Write-Audit ('ERROR DESINSTALACION: ' + $name + ' / ' + $_.Exception.Message)
+        [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo desinstalar','OK','Error')
+    } finally {
+        $script:StatusLabel.Text = 'Listo. Revisa el historial y vuelve a escanear para confirmar.'
+        Update-Detail
+    }
+}
+
+function Request-RestorePoint {
+    if (-not (Test-Administrator)) {
+        [void][System.Windows.Forms.MessageBox]::Show('Para crear un punto de restauración, cierra WinCare y abre el archivo .bat como administrador. No es necesario elevarse para consultar el inventario.','Requiere administrador','OK','Information')
+        return
+    }
+    $response = [System.Windows.Forms.MessageBox]::Show('Se intentará crear un punto de restauración. Windows debe tener Protección del sistema habilitada y normalmente limita la frecuencia a uno por día. No sustituye una copia de seguridad.','Crear punto de restauración','YesNo','Question','Button2')
+    if ($response -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+    try {
+        $script:StatusLabel.Text = 'Solicitando punto de restauración a Windows...'
+        [System.Windows.Forms.Application]::DoEvents()
+        Checkpoint-Computer -Description ('WinCare Portable ' + (Get-Date -Format 'yyyy-MM-dd HH:mm')) -RestorePointType MODIFY_SETTINGS -ErrorAction Stop
+        Write-Audit 'PUNTO DE RESTAURACION: solicitado sin errores'
+        [void][System.Windows.Forms.MessageBox]::Show('Windows confirmó la creación del punto de restauración.','Correcto','OK','Information')
+    } catch {
+        Write-Audit ('ERROR RESTAURACION: ' + $_.Exception.Message)
+        [void][System.Windows.Forms.MessageBox]::Show(('No se pudo crear el punto de restauración: ' + $_.Exception.Message + [Environment]::NewLine + 'Comprueba la Protección del sistema.'),'No disponible','OK','Warning')
+    } finally { $script:StatusLabel.Text = 'Listo.' }
+}
+
+# ---- Interfaz portátil WinForms ----
+$form = New-Object System.Windows.Forms.Form
+$form.Text = 'WinCare Portable | Diagnóstico y limpieza segura'
+$form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+$form.Size = New-Object System.Drawing.Size(1260, 780)
+$form.MinimumSize = New-Object System.Drawing.Size(1130, 700)
+$form.BackColor = $script:Palette.Bg
+$form.ForeColor = $script:Palette.Text
+$form.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+
+$header = New-Object System.Windows.Forms.Label
+$header.Location = New-Object System.Drawing.Point(20, 15)
+$header.Size = New-Object System.Drawing.Size(800, 32)
+$header.Text = 'WinCare Portable'
+$header.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 18, [System.Drawing.FontStyle]::Bold)
+$header.ForeColor = $script:Palette.Text
+$form.Controls.Add($header)
+
+$script:SubtitleLabel = New-Object System.Windows.Forms.Label
+$script:SubtitleLabel.Location = New-Object System.Drawing.Point(22, 55)
+$script:SubtitleLabel.Size = New-Object System.Drawing.Size(1190, 25)
+$script:SubtitleLabel.Text = 'Inventario sin modificaciones | Windows 10 / 11 | Los elementos protegidos son solo informativos.'
+$script:SubtitleLabel.ForeColor = $script:Palette.Muted
+$script:SubtitleLabel.Anchor = 'Top,Left,Right'
+$form.Controls.Add($script:SubtitleLabel)
+
+$script:SearchBox = New-Object System.Windows.Forms.TextBox
+$script:SearchBox.Location = New-Object System.Drawing.Point(20, 98)
+$script:SearchBox.Size = New-Object System.Drawing.Size(300, 30)
+$script:SearchBox.BackColor = $script:Palette.Panel
+$script:SearchBox.ForeColor = $script:Palette.Text
+$script:SearchBox.BorderStyle = 'FixedSingle'
+$form.Controls.Add($script:SearchBox)
+$script:SearchBox.Add_TextChanged({ Update-Search })
+
+$script:ScanButton = New-Object System.Windows.Forms.Button
+$script:ScanButton.Text = 'Analizar PC'
+$script:ScanButton.Location = New-Object System.Drawing.Point(335, 96)
+$script:ScanButton.Size = New-Object System.Drawing.Size(125, 31)
+$script:ScanButton.BackColor = $script:Palette.Accent
+$script:ScanButton.ForeColor = [System.Drawing.Color]::White
+$script:ScanButton.FlatStyle = 'Flat'
+$form.Controls.Add($script:ScanButton)
+$script:ScanButton.Add_Click({ Refresh-Inventory })
+
+$script:ChangeCheck = New-Object System.Windows.Forms.CheckBox
+$script:ChangeCheck.Text = 'Habilitar desinstalación (precaución)'
+$script:ChangeCheck.Location = New-Object System.Drawing.Point(482, 97)
+$script:ChangeCheck.Size = New-Object System.Drawing.Size(330, 30)
+$script:ChangeCheck.ForeColor = [System.Drawing.Color]::FromArgb(255, 207, 105)
+$script:ChangeCheck.Checked = $false
+$form.Controls.Add($script:ChangeCheck)
+$script:ChangeCheck.Add_CheckedChanged({ Update-Detail })
+
+$script:TabControl = New-Object System.Windows.Forms.TabControl
+$script:TabControl.Location = New-Object System.Drawing.Point(20, 140)
+$script:TabControl.Size = New-Object System.Drawing.Size(1200, 455)
+$script:TabControl.Anchor = 'Top,Bottom,Left,Right'
+$script:TabControl.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+$form.Controls.Add($script:TabControl)
+
+foreach ($name in $script:Categories) {
+    $script:Tables[$name] = New-InventoryTable
+    $page = New-Object System.Windows.Forms.TabPage
+    $page.Text = $name
+    $page.BackColor = $script:Palette.Panel
+    $page.ForeColor = $script:Palette.Text
+    $grid = New-Object System.Windows.Forms.DataGridView
+    $grid.Dock = 'Fill'
+    $grid.ReadOnly = $true
+    $grid.AllowUserToAddRows = $false
+    $grid.AllowUserToDeleteRows = $false
+    $grid.SelectionMode = 'FullRowSelect'
+    $grid.MultiSelect = $false
+    $grid.AutoGenerateColumns = $true
+    $grid.AutoSizeColumnsMode = 'Fill'
+    $grid.RowHeadersVisible = $false
+    $grid.BackgroundColor = $script:Palette.Panel
+    $grid.GridColor = $script:Palette.Border
+    $grid.BorderStyle = 'None'
+    $grid.EnableHeadersVisualStyles = $false
+    $grid.ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(39, 53, 72)
+    $grid.ColumnHeadersDefaultCellStyle.ForeColor = $script:Palette.Text
+    $grid.DefaultCellStyle.BackColor = $script:Palette.Panel
+    $grid.DefaultCellStyle.ForeColor = $script:Palette.Text
+    $grid.DefaultCellStyle.SelectionBackColor = [System.Drawing.Color]::FromArgb(39, 104, 169)
+    $grid.DefaultCellStyle.SelectionForeColor = [System.Drawing.Color]::White
+    $grid.AlternatingRowsDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(33, 45, 61)
+    $grid.DataSource = $script:Tables[$name].DefaultView
+    foreach ($hidden in @('Detalle','Clave','DatoExtra')) { $grid.Columns[$hidden].Visible = $false }
+    foreach ($pair in @(@('Nombre',250),@('Tipo',100),@('Versión',100),@('Fabricante',170),@('Estado',145),@('Riesgo',95),@('Acción',90))) {
+        $grid.Columns[$pair[0]].FillWeight = [single]$pair[1]
+    }
+    $grid.Add_SelectionChanged({ Update-Detail })
+    $page.Controls.Add($grid)
+    $script:Grids[$name] = $grid
+    [void]$script:TabControl.TabPages.Add($page)
+}
+$script:TabControl.Add_SelectedIndexChanged({ Update-Search; Update-Detail })
+
+$script:DetailLabel = New-Object System.Windows.Forms.Label
+$script:DetailLabel.Location = New-Object System.Drawing.Point(23, 600)
+$script:DetailLabel.Size = New-Object System.Drawing.Size(1180, 65)
+$script:DetailLabel.Anchor = 'Bottom,Left,Right'
+$script:DetailLabel.ForeColor = $script:Palette.Muted
+$script:DetailLabel.Text = 'Selecciona un elemento para ver su riesgo y consecuencias.'
+$form.Controls.Add($script:DetailLabel)
+
+$script:RemoveButton = New-Object System.Windows.Forms.Button
+$script:RemoveButton.Text = 'Desinstalar seleccionado'
+$script:RemoveButton.Location = New-Object System.Drawing.Point(20, 673)
+$script:RemoveButton.Size = New-Object System.Drawing.Size(205, 33)
+$script:RemoveButton.Anchor = 'Bottom,Left'
+$script:RemoveButton.BackColor = [System.Drawing.Color]::FromArgb(160, 67, 63)
+$script:RemoveButton.ForeColor = [System.Drawing.Color]::White
+$script:RemoveButton.FlatStyle = 'Flat'
+$script:RemoveButton.Enabled = $false
+$form.Controls.Add($script:RemoveButton)
+$script:RemoveButton.Add_Click({ Uninstall-Selected })
+
+$windowsBtn = New-Object System.Windows.Forms.Button
+$windowsBtn.Text = 'Desinstalar desde Windows'
+$windowsBtn.Location = New-Object System.Drawing.Point(235, 673)
+$windowsBtn.Size = New-Object System.Drawing.Size(196, 33)
+$windowsBtn.Anchor = 'Bottom,Left'
+$form.Controls.Add($windowsBtn)
+$windowsBtn.Add_Click({ Open-WindowsUninstall })
+
+$restoreBtn = New-Object System.Windows.Forms.Button
+$restoreBtn.Text = 'Punto restauración'
+$restoreBtn.Location = New-Object System.Drawing.Point(440, 673)
+$restoreBtn.Size = New-Object System.Drawing.Size(167, 33)
+$restoreBtn.Anchor = 'Bottom,Left'
+$form.Controls.Add($restoreBtn)
+$restoreBtn.Add_Click({ Request-RestorePoint })
+
+$exportBtn = New-Object System.Windows.Forms.Button
+$exportBtn.Text = 'Exportar inventario'
+$exportBtn.Location = New-Object System.Drawing.Point(616, 673)
+$exportBtn.Size = New-Object System.Drawing.Size(167, 33)
+$exportBtn.Anchor = 'Bottom,Left'
+$form.Controls.Add($exportBtn)
+$exportBtn.Add_Click({ Export-Inventory })
+
+$folderBtn = New-Object System.Windows.Forms.Button
+$folderBtn.Text = 'Ver reportes'
+$folderBtn.Location = New-Object System.Drawing.Point(791, 673)
+$folderBtn.Size = New-Object System.Drawing.Size(127, 33)
+$folderBtn.Anchor = 'Bottom,Left'
+$form.Controls.Add($folderBtn)
+$folderBtn.Add_Click({
+    try { Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + (Resolve-OutputDirectory) + '"') }
+    catch { [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Error','OK','Error') }
+})
+
+$helpBtn = New-Object System.Windows.Forms.Button
+$helpBtn.Text = 'Ayuda y seguridad'
+$helpBtn.Location = New-Object System.Drawing.Point(928, 673)
+$helpBtn.Size = New-Object System.Drawing.Size(150, 33)
+$helpBtn.Anchor = 'Bottom,Left'
+$form.Controls.Add($helpBtn)
+$helpBtn.Add_Click({
+    $message = @'
+WinCare Portable v1.0
+
+- Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
+- Solo permite quitar Appx expresamente aprobadas y MSI verificados.
+- No desinstala servicios, controladores, características ni capacidades Windows.
+- Los programas no compatibles se gestionan desde Configuración de Windows.
+- Riesgo bajo NO significa riesgo cero: podrías perder datos de una aplicación.
+- Un punto de restauración no reemplaza una copia de seguridad de tus archivos.
+- No elimina aplicaciones de otros usuarios ni aprovisionadas para cuentas nuevas.
+- Si se ha usado Ejecutar como otro usuario, Appx se detecta para ese usuario.
+- El inventario puede ser parcial sin permisos elevados y no detecta todos los programas portátiles.
+
+Consulta el README incluido para obtener instrucciones.
+'@
+    [void][System.Windows.Forms.MessageBox]::Show($message,'Ayuda y límites de seguridad','OK','Information')
+})
+
+$script:StatusLabel = New-Object System.Windows.Forms.Label
+$script:StatusLabel.Location = New-Object System.Drawing.Point(22, 715)
+$script:StatusLabel.Size = New-Object System.Drawing.Size(1160, 22)
+$script:StatusLabel.ForeColor = $script:Palette.Muted
+$script:StatusLabel.Anchor = 'Bottom,Left,Right'
+$script:StatusLabel.Text = 'Listo. Modo de solo lectura activado.'
+$form.Controls.Add($script:StatusLabel)
+
+$form.Add_Shown({
+    [System.Windows.Forms.Application]::DoEvents()
+    Refresh-Inventory
+})
+[void]$form.ShowDialog()
