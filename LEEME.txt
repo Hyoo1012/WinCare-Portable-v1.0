@@ -1,0 +1,17 @@
+WINCARE PORTABLE v1.0
+=====================
+Requisitos: Windows 10/11; Windows PowerShell 5.1.
+1. Copia los archivos de este repositorio a tu USB Ventoy en Herramientas\WinCarePortable.
+2. Arranca Windows normalmente y ejecuta INICIAR_WINCARE.bat.
+3. Analiza aplicaciones, servicios, controladores y componentes del sistema.
+4. Exporta informes antes de realizar cambios.
+5. La desinstalacion esta deshabilitada de forma predeterminada; confirma cada accion.
+
+ADVERTENCIA: desinstalar puede afectar aplicaciones, configuraciones o funciones.
+La herramienta no garantiza reversion. Respalda tus datos.
+Solo se permite quitar aplicaciones Appx opcionales conocidas y MSI verificados.
+No se eliminan servicios, controladores, Defender, Windows Update ni otros
+componentes esenciales. El punto de restauracion es opcional y depende de Windows.
+
+Esta herramienta no arranca desde el menu Ventoy; se usa dentro de Windows.
+Consulta README.md para detalles.
