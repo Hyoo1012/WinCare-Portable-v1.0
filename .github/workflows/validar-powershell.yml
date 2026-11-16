@@ -15,6 +15,12 @@ jobs:
       - name: Probar tablas de interfaz sin cambiar Windows
         shell: powershell
         run: .\tests\ProbarInterfaz.ps1
+      - name: Validar recomendaciones portátiles
+        shell: powershell
+        run: .\tests\ProbarRecomendaciones.ps1
+      - name: Validar informes técnicos seguros
+        shell: powershell
+        run: .\tests\ProbarTaller.ps1
       - name: Comprobar seguridad de candidatos de limpieza
         shell: powershell
         run: .\tests\ProbarLimpieza.ps1
