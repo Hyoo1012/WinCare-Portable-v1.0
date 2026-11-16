@@ -207,7 +207,7 @@ function Backup-TDrivers {
         $code=[int]$process.ExitCode
         Write-TAudit ('Drivers: destino='+$destination+'; ExitCode='+$code)
         if($code -ne 0){throw ('pnputil terminó con código '+$code+'. Revisa el contenido parcial y el espacio libre.')}
-        [void][Windows.Forms.MessageBox]::Show(('Windows terminó la exportación a '+$destination+'. Guarda una copia externa y comprueba las carpetas INF.','Resultado'),'','Information')
+        [void][Windows.Forms.MessageBox]::Show(('Windows terminó la exportación a '+$destination+'. Guarda una copia externa y comprueba las carpetas INF.'),'Resultado del respaldo','OK','Information')
         $script:TStatus.Text='Exportación de drivers completada.'
     }catch{
         [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se completó respaldo de drivers','OK','Warning')
