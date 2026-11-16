@@ -24,6 +24,9 @@ jobs:
       - name: Probar desinstalación Steam, MSI y acciones seguras
         shell: powershell
         run: .\tests\ProbarDesinstalacion.ps1
+      - name: Comprobar que los análisis no se inicien al abrir
+        shell: powershell
+        run: .\tests\ProbarAnalisisBajoDemanda.ps1
       - name: Probar redes avanzadas, límites y estadísticas sin tráfico
         shell: powershell
         run: .\tests\ProbarRedesAvanzadas.ps1
