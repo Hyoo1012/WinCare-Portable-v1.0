@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v2.0
+﻿# WinCare Portable - v2.1
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -469,7 +469,7 @@ function Export-Inventory {
                 $records | Export-Csv -LiteralPath (Join-Path $folder $filename) -NoTypeInformation -Encoding UTF8
             }
         }
-        ('WinCare Portable v2.0 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
+        ('WinCare Portable v2.1 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
         Write-Audit ('EXPORTACION: ' + $folder)
         [void][System.Windows.Forms.MessageBox]::Show(('Inventario exportado en:' + [Environment]::NewLine + $folder),'Exportación completada','OK','Information')
         Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $folder + '"')
@@ -648,7 +648,7 @@ function Request-RestorePoint {
 
 # ---- Interfaz portátil WinForms ----
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'WinCare Portable v2.0 | Soporte PC, Redes y CCTV | DevPoderSEO'
+$form.Text = 'WinCare Portable v2.1 | Soporte PC, Redes y CCTV | DevPoderSEO'
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
 $form.Size = New-Object System.Drawing.Size(1340, 885)
 $form.MinimumSize = New-Object System.Drawing.Size(1185, 790)
@@ -907,7 +907,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v2.0 - Diseñado por DevPoderSEO
+WinCare Portable v2.1 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Permite quitar Appx opcionales, MSI validados, juegos Steam registrados y algunos asistentes interactivos comprobados.
