@@ -530,7 +530,8 @@ $script:DGrid=New-DGrid $script:DResults
 $diag.Controls.Add($script:DGrid)
 $script:DGrid.Add_CellFormatting({
     param($sender,$eventArgs)
-    if($eventArgs.RowIndex -lt 0 -or [string]$sender.Columns[$eventArgs.ColumnIndex].Name -ne 'Estado'){return}
+    if($eventArgs.RowIndex -lt 0 -or $eventArgs.ColumnIndex -lt 0){return}
+    if([string]$sender.Columns[$eventArgs.ColumnIndex].Name -ne 'Estado'){return}
     switch([string]$eventArgs.Value){
         'Correcto' {$eventArgs.CellStyle.ForeColor=$script:DColors.Good}
         'Revisar' {$eventArgs.CellStyle.ForeColor=$script:DColors.Warn}
@@ -617,7 +618,7 @@ $portHeading.Size=New-Object Drawing.Size(750,28)
 $portHeading.Font=New-Object Drawing.Font('Segoe UI Semibold',12,[Drawing.FontStyle]::Bold)
 $portPanel.Controls.Add($portHeading)
 $portHint=New-Object Windows.Forms.Label
-$portHint.Text='Solo una IP privada del adaptador seleccionado. Puertos habituales: 80 web, 443 HTTPS, 554 RTSP, 8000, 8080.'
+$portHint.Text='Escribe una IP privada autorizada o selecciónala del Mapa LAN. Puertos habituales: 80, 443, 554, 8000, 8080.'
 $portHint.Location=New-Object Drawing.Point(13,38)
 $portHint.Size=New-Object Drawing.Size(1000,22)
 $portHint.ForeColor=$script:DColors.Muted
@@ -625,7 +626,7 @@ $portPanel.Controls.Add($portHint)
 $script:DTargetIP=New-Object Windows.Forms.TextBox
 $script:DTargetIP.Location=New-Object Drawing.Point(14,73)
 $script:DTargetIP.Size=New-Object Drawing.Size(305,27)
-$script:DTargetIP.Text='192.168.1.10'
+$script:DTargetIP.Text=''
 $portPanel.Controls.Add($script:DTargetIP)
 $script:DPort=New-Object Windows.Forms.ComboBox
 $script:DPort.DropDownStyle='DropDownList'
