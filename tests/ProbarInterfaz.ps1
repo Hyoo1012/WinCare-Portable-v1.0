@@ -11,4 +11,6 @@ Write-Host 'Iniciando prueba de construccion de seguridad de red (sin escaneo ni
 & (Join-Path $root 'NetworkAudit.ps1') -SmokeTest
 Write-Host 'Probando ventana Hardware y salud sin leer ni modificar el equipo...'
 & (Join-Path $root 'HardwareAudit.ps1') -SmokeTest
-Write-Host 'OK: las tres interfaces iniciaron tablas sin columnas nulas.'
+Write-Host 'Probando Centro de mantenimiento sin lectura ni limpieza...'
+& (Join-Path $root 'MaintenanceAudit.ps1') -SmokeTest
+Write-Host 'OK: las cuatro interfaces se inicializaron sin acciones destructivas.'
