@@ -247,7 +247,7 @@ function Register-NDevice {
     if ($name.Length -gt 80) { $name = $name.Substring(0,80) }
     $script:NKnown = @($script:NKnown | Where-Object { $_.IP -ne $ip -and (-not $mac -or $_.MAC -ne $mac) })
     $script:NKnown += [pscustomobject]@{ IP=$ip; MAC=$mac; Nombre=$name; Fecha=(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') }
-    try { Save-NKnown; Refresh-NInventory } catch {
+    try { Save-NKnown; Refresh-NInventory 'Equipos LAN' } catch {
         [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo guardar','OK','Error')
     }
 }
