@@ -1,4 +1,4 @@
-﻿# WinCare Portable v2.0 - Crear ZIP confiable para USB Ventoy
+﻿# WinCare Portable v2.1 - Crear ZIP confiable para USB Ventoy
 # Diseñado por DevPoderSEO. No requiere elevación ni descarga de Internet.
 #requires -Version 5.1
 param([string]$DestinationDirectory='')
@@ -9,10 +9,11 @@ $required=@(
  'WinCare.ps1','DesktopUninstall.ps1','SteamGames.ps1','AppRules.ps1','AppRecommendations.ps1',
  'NetworkAudit.ps1','NetworkDiagnostics.ps1','NetworkDiagnosticsCore.ps1','HardwareAudit.ps1',
  'MaintenanceAudit.ps1','TechToolkit.ps1','SupportTechnician.ps1','CCTVCore.ps1','CCTVAudit.ps1',
- 'WinCareHealth.ps1','INICIAR_WINCARE.bat','LEEME.txt','README.md'
+ 'WinCareHealth.ps1','AdvancedNetworkCore.ps1','AdvancedNetwork.ps1','INICIAR_WINCARE.bat','LEEME.txt','README.md'
 )
 $example='Configuracion/recomendaciones.ejemplo.json'
-foreach($rel in $required+@($example)){
+$ouiExample='Configuracion/fabricantes-oui.ejemplo.csv'
+foreach($rel in $required+@($example,$ouiExample)){
     if(-not (Test-Path -LiteralPath (Join-Path $root $rel) -PathType Leaf)){
         throw ('No se puede crear el paquete; falta '+$rel)
     }
@@ -23,7 +24,7 @@ if(-not (Test-Path -LiteralPath $DestinationDirectory)){
 $work=Join-Path ([IO.Path]::GetTempPath()) ('WinCare-Paquete-'+[guid]::NewGuid().ToString('N'))
 $stage=Join-Path $work 'WinCarePortable'
 $verify=Join-Path $work 'Comprobacion'
-$zip=Join-Path $DestinationDirectory 'WinCarePortable-v2.0.zip'
+$zip=Join-Path $DestinationDirectory 'WinCarePortable-v2.1.zip'
 try{
     [void](New-Item -Path $stage -ItemType Directory -Force)
     foreach($rel in $required){
@@ -32,7 +33,8 @@ try{
     $cfg=Join-Path $stage 'Configuracion'
     [void](New-Item -Path $cfg -ItemType Directory -Force)
     Copy-Item -LiteralPath (Join-Path $root $example) -Destination (Join-Path $cfg 'recomendaciones.ejemplo.json') -ErrorAction Stop
-    $version='WinCare Portable v2.0'+[Environment]::NewLine+'Diseñado por DevPoderSEO'+[Environment]::NewLine+'Generado: '+(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')+[Environment]::NewLine+'Se ejecuta dentro de Windows 10/11.'+[Environment]::NewLine
+    Copy-Item -LiteralPath (Join-Path $root $ouiExample) -Destination (Join-Path $cfg 'fabricantes-oui.ejemplo.csv') -ErrorAction Stop
+    $version='WinCare Portable v2.1'+[Environment]::NewLine+'Diseñado por DevPoderSEO'+[Environment]::NewLine+'Generado: '+(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')+[Environment]::NewLine+'Se ejecuta dentro de Windows 10/11.'+[Environment]::NewLine
     [IO.File]::WriteAllText((Join-Path $stage 'VERSION.txt'),$version,(New-Object Text.UTF8Encoding($true)))
     $lines=New-Object 'System.Collections.Generic.List[string]'
     foreach($f in @(Get-ChildItem -LiteralPath $stage -File -Recurse -ErrorAction Stop | Sort-Object FullName)){
@@ -45,7 +47,7 @@ try{
     Compress-Archive -Path $stage -DestinationPath $zip -CompressionLevel Optimal -ErrorAction Stop
     [void](New-Item -Path $verify -ItemType Directory -Force)
     Expand-Archive -LiteralPath $zip -DestinationPath $verify -Force -ErrorAction Stop
-    foreach($rel in $required+@($example,'SHA256SUMS.txt','VERSION.txt')){
+    foreach($rel in $required+@($example,$ouiExample,'SHA256SUMS.txt','VERSION.txt')){
         if(-not (Test-Path -LiteralPath (Join-Path (Join-Path $verify 'WinCarePortable') $rel) -PathType Leaf)){
             throw ('Paquete ZIP incompleto: '+$rel)
         }
