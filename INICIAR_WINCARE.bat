@@ -17,6 +17,9 @@ if not exist "%~dp0HardwareAudit.ps1" (
 if not exist "%~dp0MaintenanceAudit.ps1" (
   echo ADVERTENCIA: falta MaintenanceAudit.ps1. Mantenimiento no estara disponible.
 )
+if not exist "%~dp0WinCareHealth.ps1" (
+  echo ADVERTENCIA: falta WinCareHealth.ps1. La verificacon integral no estara disponible.
+)
 if not exist "%~dp0SteamGames.ps1" (
   echo ERROR: falta SteamGames.ps1. Descarga el paquete completo.
   pause
