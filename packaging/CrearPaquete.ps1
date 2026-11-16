@@ -52,18 +52,12 @@ try{
     }
     $verifiedRoot=Join-Path $verify 'WinCarePortable'
     foreach($line in @(Get-Content -LiteralPath (Join-Path $verifiedRoot 'SHA256SUMS.txt') -Encoding UTF8 -ErrorAction Stop)){
-        if($line -notmatch '^([0-9A-Fa-f]{64})  ([A-Za-z0-9_.\/-]+)
-        if(Test-Path -LiteralPath (Join-Path (Join-Path $verify 'WinCarePortable') $forbidden)){throw ('El ZIP contiene datos privados: '+$forbidden)}
-    }
-    Write-Host ('OK: ZIP portátil completo, verificado y sin reportes privados: '+$zip)
-}finally{
-    Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
-}
-){throw 'Línea SHA256 inválida dentro del ZIP.'}
+        if($line -notmatch '^([0-9A-Fa-f]{64})  ([A-Za-z0-9_.\/-]+)$'){throw 'Línea SHA256 inválida dentro del ZIP.'}
         $expected=[string]$matches[1];$relative=[string]$matches[2]
         if($relative -match '(^|/)\.\.(/|$)'){throw 'Ruta inválida en manifiesto SHA256.'}
         $file=[IO.Path]::GetFullPath((Join-Path $verifiedRoot $relative.Replace('/','\')))
-        if(-not $file.StartsWith(([IO.Path]::GetFullPath($verifiedRoot).TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)){
+        $prefix=[IO.Path]::GetFullPath($verifiedRoot).TrimEnd('\')+'\'
+        if(-not $file.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)){
             throw 'Una ruta del manifiesto sale del paquete.'
         }
         $actual=(Get-FileHash -LiteralPath $file -Algorithm SHA256 -ErrorAction Stop).Hash
