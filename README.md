@@ -1,4 +1,4 @@
-# WinCare Portable v1.4
+# WinCare Portable v1.5
 
 **Diseñado por DevPoderSEO**
 
@@ -11,7 +11,7 @@ Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar 
 1. En este repositorio selecciona **Code → Download ZIP**.
 2. Descomprime todos los archivos en una misma carpeta, por ejemplo `Ventoy:\Herramientas\WinCarePortable\`.
 3. Arranca Windows normalmente y ejecuta `INICIAR_WINCARE.bat`.
-4. En la ventana principal pulsa **Analizar PC**, **Seguridad de red e IP** o **Hardware y salud** o **Mantenimiento** para abrir el módulo deseado.
+4. Selecciona uno de los cinco módulos: **Hardware y salud, Red e IP, Mantenimiento, Taller técnico o Recomendaciones**. El inventario principal permanece en siete pestañas.
 
 ### Permisos de administrador (UAC)
 
@@ -33,6 +33,10 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | `NetworkAudit.ps1` | Diagnóstico de conexiones y seguridad de red (solo lectura) |
 | `HardwareAudit.ps1` | Inventario de componentes, estado de discos, dispositivos y accesos a herramientas de Windows (solo lectura) |
 | `MaintenanceAudit.ps1` | Diagnóstico preventivo, limpieza selectiva de temporales y verificaciones opcionales |
+| `AppRules.ps1` | Motor de reglas portátiles de programas Conservar/Opcional |
+| `AppRecommendations.ps1` | Editor visual para el catálogo de aplicaciones |
+| `TechToolkit.ps1` | Informe técnico HTML/CSV, respaldo de drivers y reparación guiada |
+| `Configuracion/recomendaciones.json` | Se crea al guardar la primera regla y se puede copiar con Ventoy |
 | `INICIAR_WINCARE.bat` | Iniciador local |
 | `LEEME.txt` | Guía rápida |
 | `Red-Confiables.json` | Se genera al registrar equipos de confianza en la misma carpeta o en Reportes |
@@ -134,6 +138,34 @@ Accesos oficiales a Windows Update, Aplicaciones de inicio, Sensor de almacenami
 Los resultados se exportan a CSV en Reportes/mantenimiento-AAAAMMDD-HHMMSS. Los registros de auditoría se guardan localmente en auditoria.txt o auditoria-mantenimiento.txt. Los informes pueden contener datos técnicos privados del equipo.
 
 **Limitaciones:** cierto inventario y Windows\Temp requieren permisos elevados. La limpieza no reemplaza un respaldo y no detecta todos los problemas del computador. Las pruebas automatizadas verifican sintaxis, construcción de interfaz y exclusión de rutas/extensiones, no borrados reales de producción. Comprueba la operación en un equipo de prueba antes de utilizarla en equipos importantes.
+
+## Recomendaciones personalizadas: qué conservar y qué desinstalar
+
+El técnico puede crear un **catálogo portátil** desde la nueva sección **05 Recomendaciones**, sin modificar scripts:
+
+1. En la pantalla principal, selecciona una aplicación de **Apps Store** o **Programas**.
+2. Abre **05 Recomendaciones**. Se completarán nombre, fabricante y tipo desde la selección, cuando sea posible.
+3. Selecciona **Conservar** (bloquea la desinstalación desde WinCare) u **Opcional** (solo recomendación de revisión; no autoriza una eliminación).
+4. Escribe el motivo de la recomendación y pulsa **Guardar recomendación**.
+5. Al cerrar el editor, WinCare actualiza la columna **Recomendación**. Selecciona una regla existente para modificarla o quitarla. Puedes exportar el catálogo como CSV.
+
+Las reglas se guardan en `Configuracion/recomendaciones.json`, junto al programa; se crea un archivo `.bak` antes de reemplazar la configuración. Appx coincide por nombre exacto; Win32 por nombre y fabricante exactos. El archivo puede copiarse a otra memoria Ventoy. **Si es ilegible, WinCare desactiva la desinstalación por seguridad**.
+
+**Regla clave:** marcar un elemento como **Opcional** NUNCA desbloquea Defender, drivers, Windows Update, Store, WebView, .NET ni otros componentes protegidos. Algunas aplicaciones solo pueden retirarse con la configuración oficial de Windows. Una recomendación del técnico no representa una certificación de seguridad.
+
+## Taller técnico: informes, controladores y reparación guiada
+
+Pulsa **04 Taller técnico** para acceder a tres secciones:
+
+- **Informe técnico:** lee Windows, CPU, RAM, discos, GPU, dispositivos con códigos de error, red, firewall, Defender y datos de Windows Update. Incluye cliente y orden de trabajo. La opción de incluir identificadores del equipo e IP está **desactivada por defecto**. Exporta un HTML imprimible como PDF en un navegador y un CSV, sin conexiones externas.
+- **Respaldo de drivers:** utiliza la herramienta nativa `pnputil /export-driver *` para guardar controladores de terceros en una carpeta elegida y confirmada por el usuario. Requiere privilegios administrativos. No respalda programas, licencias, datos personales ni una imagen completa de Windows; es recomendable una unidad externa.
+- **Reparación guiada:** ofrece verificaciones SFC `/verifyonly`, DISM `/ScanHealth` y CHKDSK `/scan` y, separadamente, reparaciones opcionales SFC `/scannow` y DISM `/RestoreHealth` con **doble confirmación**. Muestra avisos de riesgo y utiliza el UAC de Windows. Ninguna reparación se ejecuta automáticamente y **no se garantiza reversibilidad**.
+
+El informe se guarda en una subcarpeta `Reportes/taller-AAAAMMDD-HHMMSS/`. Revísalo antes de entregarlo: puede contener información del cliente si la ingresaste.
+
+## Interfaz v1.5
+
+La pantalla principal separa los cinco módulos en una barra de navegación superior y deja las operaciones sensibles en una fila inferior. Se amplió el espacio del inventario, se añadió la columna **Recomendación** y se usan etiquetas, colores y ayudas contextuales para facilitar la identificación. El modo desinstalación permanece apagado por defecto.
 
 ## Seguridad de red e IP
 
