@@ -4,7 +4,7 @@
 # Solo lectura: no mata procesos, no bloquea IP y no escanea otros hosts.
 # Una conexion desconocida NO demuestra una intrusion.
 #requires -Version 5.1
-param([System.Windows.Forms.Form]$Owner)
+param([System.Windows.Forms.Form]$Owner, [switch]$SmokeTest)
 
 $script:NColors = @{
     Bg=[Drawing.Color]::FromArgb(17,24,35)
@@ -402,7 +402,7 @@ foreach ($kind in $script:NCategories) {
     $grid.RowHeadersVisible = $false
     $grid.SelectionMode = 'FullRowSelect'
     $grid.MultiSelect = $false
-    $grid.AutoGenerateColumns = $true
+    $grid.AutoGenerateColumns = $false
     $grid.AutoSizeColumnsMode = 'DisplayedCells'
     $grid.BackgroundColor = $script:NColors.Panel
     $grid.GridColor = [Drawing.Color]::FromArgb(52,65,84)
@@ -414,6 +414,15 @@ foreach ($kind in $script:NCategories) {
     $grid.DefaultCellStyle.SelectionBackColor = [Drawing.Color]::FromArgb(39,104,169)
     $grid.DefaultCellStyle.SelectionForeColor = [Drawing.Color]::White
     $grid.AlternatingRowsDefaultCellStyle.BackColor = [Drawing.Color]::FromArgb(33,45,61)
+    # Crear las columnas primero; la generación automática puede ser diferida.
+    foreach ($dataColumn in $script:NTables[$kind].Columns) {
+        $columnName = [string]$dataColumn.ColumnName
+        $column = New-Object Windows.Forms.DataGridViewTextBoxColumn
+        $column.Name = $columnName
+        $column.DataPropertyName = $columnName
+        $column.HeaderText = $columnName
+        [void]$grid.Columns.Add($column)
+    }
     $grid.DataSource = $script:NTables[$kind].DefaultView
     $tab.Controls.Add($grid)
     $script:NGrids[$kind] = $grid
@@ -429,6 +438,20 @@ $script:NStatus.Anchor = 'Bottom,Left,Right'
 $script:NStatus.ForeColor = $script:NColors.Muted
 $script:NForm.Controls.Add($script:NStatus)
 $script:NForm.Add_Shown({ [Windows.Forms.Application]::DoEvents(); Refresh-NInventory })
+if ($SmokeTest) {
+    # Prueba de construcción de UI, sin escaneo ni acceso a la red.
+    foreach ($category in $script:NCategories) {
+        $grid = $script:NGrids[$category]
+        $table = $script:NTables[$category]
+        if ($null -eq $grid -or $grid.Columns.Count -ne $table.Columns.Count) { throw ('Error en columnas de ' + $category) }
+        foreach ($dataColumn in $table.Columns) {
+            if ($null -eq $grid.Columns[[string]$dataColumn.ColumnName]) { throw ('Columna ausente en ' + $category) }
+        }
+    }
+    Write-Host 'OK: Inicialización de 5 tablas de red.'
+    $script:NForm.Dispose()
+    return
+}
 try {
     if ($Owner) { [void]$script:NForm.ShowDialog($Owner) }
     else { [void]$script:NForm.ShowDialog() }
