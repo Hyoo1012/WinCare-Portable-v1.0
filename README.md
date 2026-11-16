@@ -1,4 +1,4 @@
-# WinCare Portable v1.5
+# WinCare Portable v1.6
 
 **Diseñado por DevPoderSEO**
 
@@ -36,6 +36,8 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | `AppRules.ps1` | Motor de reglas portátiles de programas Conservar/Opcional |
 | `AppRecommendations.ps1` | Editor visual para el catálogo de aplicaciones |
 | `TechToolkit.ps1` | Informe técnico HTML/CSV, respaldo de drivers y reparación guiada |
+| NetworkDiagnostics.ps1 | Diagnóstico inteligente de IP, DHCP, DNS, Internet, Wi-Fi y LAN autorizada |
+| NetworkDiagnosticsCore.ps1 | Reglas estrictas de IPv4, subredes y alcance de sondeo LAN |
 | `Configuracion/recomendaciones.json` | Se crea al guardar la primera regla y se puede copiar con Ventoy |
 | `INICIAR_WINCARE.bat` | Iniciador local |
 | `LEEME.txt` | Guía rápida |
@@ -167,9 +169,39 @@ El informe se guarda en una subcarpeta `Reportes/taller-AAAAMMDD-HHMMSS/`. Reví
 
 La pantalla principal separa los cinco módulos en una barra de navegación superior y deja las operaciones sensibles en una fila inferior. Se amplió el espacio del inventario, se añadió la columna **Recomendación** y se usan etiquetas, colores y ayudas contextuales para facilitar la identificación. El modo desinstalación permanece apagado por defecto.
 
+## Diagnóstico inteligente de redes — v1.6
+
+**Cómo abrirlo:** ejecuta WinCare en Windows → selecciona **02 Red e IP** → pulsa **Abrir diagnóstico inteligente (v1.6)**. También se mantiene la auditoría anterior de procesos, conexiones TCP/UDP y firewall.
+
+| Pestaña | Funciones |
+|---|---|
+| **Diagnóstico** | Adaptadores, IPv4/IPv6, prefijos, DHCP, gateway y DNS; estados Correcto, Información y Revisar, con causas probables y recomendaciones. Las consultas iniciales son **solo lectura**. |
+| **Wi-Fi** | Estado de interfaces Wi-Fi, velocidad de enlace y salida informativa de Windows. La búsqueda de redes cercanas mediante netsh es **opcional** y muestra datos según idioma y controlador. |
+| **Mapa LAN** | Diagrama lógico tipo árbol por adaptador, gateway y dispositivos de caché ARP, con IP, MAC observada y nombres de Red-Confiables.json si existen. No representa cableado físico. |
+| **Pruebas autorizadas** | Comprobación de Internet/DNS, descubrimiento limitado LAN, Wi-Fi cercano y un puerto TCP de un dispositivo en la subred. |
+
+### Consentimiento y límites
+
+El programa **nunca hace ping, búsqueda Wi-Fi, consulta DNS externa ni conexión de puerto automáticamente**. Primero hay que marcar «Estoy autorizado para comprobar esta red» y aceptar la confirmación individual. La autorización empieza desmarcada en cada inicio.
+
+- **Conectividad y DNS:** hasta dos pings al gateway privado y dos a 1.1.1.1; consulta DNS de example.com y una petición HTTPS HEAD a https://www.microsoft.com. Estos proveedores pueden observar la IP pública de salida. Un ping fallido no demuestra que Internet esté caído.
+- **Descubrimiento LAN:** máximo **16 IPv4 privadas** de la subred del adaptador activo. Se muestrean unas pocas IP próximas al gateway y al PC, no toda la red. Una prueba ICMP por destino; sin escaneo de redes públicas, credenciales o ejecución de comandos remotos.
+- **Comprobación de puertos:** UNA conexión TCP a una dirección IPv4 privada de la subred seleccionada y un puerto del listado (80, 443, 554, 8000, 8080, 3389, 22). No se envían contraseñas ni peticiones RTSP/ONVIF. Un puerto abierto no confirma el tipo ni la seguridad del servicio.
+- **Wi-Fi cercano:** búsqueda voluntaria de SSID/BSSID, canal y señal usando netsh. No captura paquetes ni contraseñas. La existencia de varios AP en el mismo canal no constituye una medición directa de interferencia.
+
+**IPv6:** el módulo enumera direcciones y gateways IPv6, pero las pruebas activas de descubrimiento y puertos se restringen a IPv4 privada. Una dirección APIPA 169.254.x.x motiva revisar DHCP y no se utiliza como blanco de sondeo.
+
+### Interpretación y reportes
+
+Los avisos muestran **posibles causas y acciones sugeridas**, no certezas. Por ejemplo: APIPA → comprobar DHCP; gateway faltante → revisar rutas; DNS fallido → revisar resolución, proxy o filtros; puerto no accesible → revisar firewall y servicio. Un equipo que no responde ping podría seguir encendido y una IP/MAC desconocida **no prueba una intrusión**.
+
+El botón **Exportar informe** genera archivos HTML/CSV de diagnóstico, lista de dispositivos y actividad de pruebas dentro de Reportes/red-diagnostico-AAAAMMDD-HHMMSS (o Documentos si el USB es de solo lectura). El HTML no requiere Internet y codifica las cadenas externas para evitar interpretar etiquetas. Los resultados incluyen IP/MAC y pueden ser datos sensibles: compartir solo con autorización.
+
+**Pruebas automáticas:** sintaxis PowerShell 5.1, construcción de interfaz, exclusión de IP públicas y subredes ajenas, máximo 16 IP privadas y codificación HTML, todo **sin enviar tráfico**. Antes de usarlo en redes de clientes se requieren pruebas funcionales en un entorno autorizado con hardware real.
+
 ## Seguridad de red e IP
 
-Pulsa **Seguridad de red e IP** en la ventana principal. Incluye:
+Abre **02 Red e IP**. La auditoría existente permanece disponible e incorpora el acceso al diagnóstico inteligente v1.6. Incluye:
 
 1. **Conexiones TCP**: aplicación, PID, IP/puerto local y remoto, estado, tipo de IP (pública/privada), firma digital del ejecutable y avisos de revisión. Una conexión pública sin firma verificable puede aparecer como **Revisar**: no es una detección de malware.
 2. **Puertos UDP**: sockets locales, proceso responsable y ruta del ejecutable.
