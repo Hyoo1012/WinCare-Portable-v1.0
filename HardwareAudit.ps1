@@ -1,4 +1,4 @@
-﻿# WinCare Portable - Inventario de hardware y diagnóstico
+﻿# WinCare Portable - Inventario de hardware y diagnóstico v1.2
 # Diseñado por DevPoderSEO
 # Windows PowerShell 5.1 (Windows 10/11)
 # Solo lectura: no modifica firmware, discos, controladores ni configuración.
@@ -225,7 +225,7 @@ function Read-HIssues {
         foreach ($eventItem in @(Get-WinEvent -FilterHashtable $filter -MaxEvents 20 -ErrorAction Stop)) {
             $message = (([string]$eventItem.Message) -replace '\s+',' ')
             if ($message.Length -gt 260) { $message = $message.Substring(0,260)+'...' }
-            Add-HRow 'Incidencias' ('Evento '+$eventItem.Id+' · '+[string]$eventItem.ProviderName) ([datetime]$eventItem.TimeCreated).ToString('yyyy-MM-dd HH:mm') 'Revisar' ('Registro del sistema (7 días); histórico, no necesariamente vigente. '+$message)
+            Add-HRow 'Incidencias' ('Evento '+$eventItem.Id+' · '+[string]$eventItem.ProviderName) (([datetime]$eventItem.TimeCreated).ToString('yyyy-MM-dd HH:mm')) 'Revisar' ('Registro del sistema (7 días); histórico, no necesariamente vigente. '+$message)
         }
     } catch {
         Add-HRow 'Incidencias' 'Eventos recientes' 'No disponibles' 'Información' 'No hay eventos coincidentes o Windows no permite consultar el registro.'
@@ -253,7 +253,7 @@ function Select-HCategory {
     Set-HFilter
 }
 function Inspect-HDetail {
-    if (-not $script:HGrid -or $script:HGrid.SelectedRows.Count -eq 0) { return }
+    if ($null -eq $script:HDetail -or -not $script:HGrid -or $script:HGrid.SelectedRows.Count -eq 0) { return }
     $row = $script:HGrid.SelectedRows[0]
     if ($row.IsNewRow) { return }
     $script:HDetail.Text = ([string]$row.Cells['Componente'].Value)+' · '+([string]$row.Cells['Estado'].Value)+': '+([string]$row.Cells['Detalle'].Value)
