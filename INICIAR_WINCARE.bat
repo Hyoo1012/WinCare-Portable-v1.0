@@ -17,6 +17,11 @@ if not exist "%~dp0HardwareAudit.ps1" (
 if not exist "%~dp0MaintenanceAudit.ps1" (
   echo ADVERTENCIA: falta MaintenanceAudit.ps1. Mantenimiento no estara disponible.
 )
+if not exist "%~dp0DesktopUninstall.ps1" (
+  echo ERROR: falta DesktopUninstall.ps1. No se iniciara WinCare sin las protecciones de desinstalacion.
+  pause
+  exit /b 1
+)
 if not exist "%~dp0AppRules.ps1" (
   echo ERROR: falta AppRules.ps1. La proteccion de aplicaciones requiere el proyecto completo.
   pause
