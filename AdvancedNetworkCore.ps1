@@ -120,3 +120,40 @@ function New-WCProHtmlReport([object[]]$Devices,[object[]]$Measurements,[object[
     [void]$sb.Append('<p>Datos sujetos a privacidad. Pérdida, latencia y jitter son muestras puntuales, no SLA continuo. Para PDF usa Imprimir del navegador.</p></body></html>')
     return $sb.ToString()
 }
+
+
+# Comparación manual de huellas de configuraciones exportadas por el técnico.
+# Solo guarda nombre lógico, fecha, tamaño y SHA256; NO guarda contraseñas ni el archivo original.
+function Get-WCProConfigFingerprint([string]$Path){
+    $file=Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+    if($file -isnot [IO.FileInfo]){throw 'Selecciona un archivo regular de configuración.'}
+    if(($file.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){throw 'No se admiten enlaces para calcular huellas.'}
+    if($file.Length -gt 8388608){throw 'Archivo de configuración demasiado grande (máximo 8 MB).'}
+    if($file.Extension.ToLowerInvariant() -notin @('.cfg','.conf','.txt','.json','.ini','.xml','.backup')){throw 'Solo se admiten exportaciones de texto/configuración reconocibles.'}
+    return [pscustomobject]@{Name=[string]$file.Name;Bytes=[long]$file.Length;Hash=(Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256 -ErrorAction Stop).Hash}
+}
+function Read-WCProConfigBaselines([string]$Path){
+    if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){return @()}
+    $file=Get-Item -LiteralPath $Path -ErrorAction Stop
+    if($file.Length -gt 262144){throw 'El registro de huellas supera 256 KB.'}
+    $doc=Get-Content -LiteralPath $Path -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    if([string]$doc.Version -ne '1'){throw 'Versión de huellas no compatible; no se sobrescribirá.'}
+    return @($doc.Dispositivos | Where-Object {$_ -and $_.Nombre})
+}
+function Save-WCProConfigBaseline([string]$Path,[string]$Name,$Fingerprint){
+    $Name=$Name.Trim()
+    if($Name.Length -lt 1 -or $Name.Length -gt 100 -or $Name -match '[\x00-\x1f]'){throw 'Nombre lógico inválido (1-100 caracteres).'}
+    if($null -eq $Fingerprint -or [string]$Fingerprint.Hash -notmatch '^[a-fA-F0-9]{64}$'){throw 'Huella de archivo inválida.'}
+    $items=@(Read-WCProConfigBaselines $Path | Where-Object {[string]$_.Nombre -ne $Name})
+    $items+= [pscustomobject]@{Nombre=$Name;SHA256=[string]$Fingerprint.Hash;Bytes=[long]$Fingerprint.Bytes;Actualizado=(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')}
+    if($items.Count -gt 100){throw 'Máximo 100 configuraciones de referencia.'}
+    $folder=Split-Path -Parent $Path
+    if(-not (Test-Path -LiteralPath $folder)){[void](New-Item -ItemType Directory -Path $folder -Force -ErrorAction Stop)}
+    $temp=Join-Path $folder ('.huellas-'+[guid]::NewGuid().ToString('N')+'.json')
+    try{
+        $json=ConvertTo-Json -InputObject ([ordered]@{Version=1;Dispositivos=$items}) -Depth 4
+        [IO.File]::WriteAllText($temp,$json,(New-Object Text.UTF8Encoding($true)))
+        if(Test-Path -LiteralPath $Path -PathType Leaf){Copy-Item -LiteralPath $Path -Destination ($Path+'.bak') -Force -ErrorAction Stop}
+        Move-Item -LiteralPath $temp -Destination $Path -Force -ErrorAction Stop
+    }finally{if(Test-Path -LiteralPath $temp){Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue}}
+}
