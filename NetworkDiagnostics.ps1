@@ -674,7 +674,7 @@ if($SafetyTest){
     $script:DForm.Dispose()
     return
 }
-$script:DForm.Add_Shown({[Windows.Forms.Application]::DoEvents();Read-DPassive})
+$script:DForm.Add_Shown({$script:DStatus.Text='Sin analizar. Pulsa Analizar información local; las pruebas activas también requieren autorización.'})
 try{
     if($Owner -is [Windows.Forms.IWin32Window]){[void]$script:DForm.ShowDialog($Owner)}
     else{[void]$script:DForm.ShowDialog()}
