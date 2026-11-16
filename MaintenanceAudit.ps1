@@ -174,7 +174,7 @@ function Get-MRoots {
     if(Test-Path -LiteralPath $windowsTemp -PathType Container) {
         $result+= [pscustomobject]@{ Code='Windows'; Root=[IO.Path]::GetFullPath($windowsTemp).TrimEnd('\'); Days=14; Admin=$true }
     }
-    return ,@($result)
+    return $result
 }
 function Test-MWithinRoot([string]$Root,[string]$Path) {
     if ([string]::IsNullOrWhiteSpace($Root) -or [string]::IsNullOrWhiteSpace($Path)) {return $false}
