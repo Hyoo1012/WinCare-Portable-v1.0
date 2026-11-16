@@ -355,7 +355,7 @@ $script:TGrid.DefaultCellStyle.SelectionForeColor=[Drawing.Color]::White
 foreach($name in @('Área','Componente','Dato','Estado','Observación')){
     $col=New-Object Windows.Forms.DataGridViewTextBoxColumn
     $col.Name=$name;$col.DataPropertyName=$name;$col.HeaderText=$name
-    $col.FillWeight=[single](switch($name){'Área'{80}'Componente'{155}'Dato'{210}'Estado'{80}'Observación'{265}})
+    $col.FillWeight=[single](switch($name){'Área' {80};'Componente' {155};'Dato' {210};'Estado' {80};'Observación' {265}})
     [void]$script:TGrid.Columns.Add($col)
 }
 $script:TGrid.DataSource=$script:TRows.DefaultView
