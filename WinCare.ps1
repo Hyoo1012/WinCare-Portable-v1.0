@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v1.2
+﻿# WinCare Portable - v1.3
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -665,7 +665,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.2 - Diseñado por DevPoderSEO
+WinCare Portable v1.3 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Solo permite quitar Appx expresamente aprobadas y MSI verificados.
@@ -676,6 +676,10 @@ WinCare Portable v1.2 - Diseñado por DevPoderSEO
 - No elimina aplicaciones de otros usuarios ni aprovisionadas para cuentas nuevas.
 - Si se ha usado Ejecutar como otro usuario, Appx se detecta para ese usuario.
 - El inventario puede ser parcial sin permisos elevados y no detecta todos los programas portátiles.
+- Centro de mantenimiento: antivirus, Windows Update, inicio, almacenamiento, firewall e integridad.
+- La limpieza solo permite temporales antiguos con extensiones aprobadas, vista previa y confirmación; no borra carpetas.
+- No se eliminan Prefetch, Descargas, perfiles de navegador ni cachés críticas.
+- Papelera opcional: doble confirmación, sin restauración garantizada.
 - Hardware y salud consulta CPU, RAM, placa madre, BIOS, discos, GPU, red, batería y dispositivos.
 - Incluye msinfo32, dxdiag, Monitor de recursos y otras herramientas de Windows.
 - Salud de disco/SMART y eventos son orientativos; no reemplazan diagnóstico del fabricante.
@@ -712,6 +716,55 @@ $hardwareBtn.Add_Click({
         [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir hardware y salud','OK','Error')
     }
 })
+
+$maintenanceBtn = New-Object System.Windows.Forms.Button
+$maintenanceBtn.Text = 'Mantenimiento'
+$maintenanceBtn.Size = New-Object System.Drawing.Size(148, 33)
+$maintenanceBtn.BackColor = $script:Palette.Accent
+$maintenanceBtn.ForeColor = [System.Drawing.Color]::White
+$maintenanceBtn.FlatStyle = 'Flat'
+$form.Controls.Add($maintenanceBtn)
+$maintenanceBtn.Add_Click({
+    $module = Join-Path $PSScriptRoot 'MaintenanceAudit.ps1'
+    if (-not (Test-Path -LiteralPath $module -PathType Leaf)) {
+        [void][System.Windows.Forms.MessageBox]::Show('No se encuentra MaintenanceAudit.ps1. Descarga el proyecto completo desde GitHub.','Módulo de mantenimiento ausente','OK','Warning')
+        return
+    }
+    try { & $module -Owner $form }
+    catch {
+        Write-Audit ('ERROR MANTENIMIENTO: '+$_.Exception.Message)
+        [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir el centro de mantenimiento','OK','Error')
+    }
+})
+
+# Fila de acciones adaptable a distintos tamaños de pantalla.
+$actionBar = New-Object System.Windows.Forms.TableLayoutPanel
+$actionBar.Location = New-Object System.Drawing.Point(20, 673)
+$actionBar.Size = New-Object System.Drawing.Size(1200, 36)
+$actionBar.Anchor = 'Bottom,Left,Right'
+$actionBar.RowCount = 1
+$actionBar.ColumnCount = 8
+$actionBar.GrowStyle = [System.Windows.Forms.TableLayoutPanelGrowStyle]::FixedSize
+for ($columnIndex = 0; $columnIndex -lt 8; $columnIndex++) {
+    [void]$actionBar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, [single]12.5)))
+}
+$script:RemoveButton.Text = 'Quitar seleccionado'
+$windowsBtn.Text = 'Apps de Windows'
+$restoreBtn.Text = 'Restauración'
+$exportBtn.Text = 'Exportar CSV'
+$folderBtn.Text = 'Ver reportes'
+$helpBtn.Text = 'Ayuda'
+$hardwareBtn.Text = 'Hardware y salud'
+$maintenanceBtn.Text = 'Mantenimiento'
+$actionButtons = @($script:RemoveButton, $windowsBtn, $restoreBtn, $exportBtn, $folderBtn, $helpBtn, $hardwareBtn, $maintenanceBtn)
+for ($buttonIndex = 0; $buttonIndex -lt $actionButtons.Count; $buttonIndex++) {
+    $button = $actionButtons[$buttonIndex]
+    $form.Controls.Remove($button)
+    $button.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $button.Margin = New-Object System.Windows.Forms.Padding(3, 1, 3, 1)
+    $actionBar.Controls.Add($button, $buttonIndex, 0)
+}
+$form.Controls.Add($actionBar)
 
 $script:StatusLabel = New-Object System.Windows.Forms.Label
 $script:StatusLabel.Location = New-Object System.Drawing.Point(22, 715)
@@ -755,10 +808,10 @@ if ($SmokeTest) {
     if (-not $script:AdminButton -or $script:AdminButton.Text -notin @('Admin activo','Solicitar permisos')) {
         throw 'Botón de elevación UAC no inicializado.'
     }
-    if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne 'Hardware y salud') {
-        throw 'Botón de hardware y salud no inicializado.'
-    }
-    Write-Host 'OK: 7 tablas WinCare, columnas protegidas, botón hardware y control UAC.'
+    if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne 'Hardware y salud') { throw 'Falta Hardware y salud.' }
+    if ($null -eq $maintenanceBtn -or $maintenanceBtn.Text -ne 'Mantenimiento') { throw 'Falta Mantenimiento.' }
+    if ($actionBar.ColumnCount -ne 8 -or $actionBar.Controls.Count -ne 8) { throw 'Barra adaptable de acciones incompleta.' }
+    Write-Host 'OK: 7 tablas, barra adaptable con 8 acciones, hardware, mantenimiento y UAC.'
     $form.Dispose()
     return
 }
