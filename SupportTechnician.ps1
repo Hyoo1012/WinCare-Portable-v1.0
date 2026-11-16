@@ -207,7 +207,7 @@ function Export-SConfiguration {
         [void][Windows.Forms.MessageBox]::Show('No se permiten destinos dentro de Windows, rutas inaccesibles ni enlaces. Selecciona otra carpeta.','Ruta no permitida','OK','Warning')
         return
     }
-    $warning='Se exportarán configuraciones técnicas (IP, gateways, DNS, impresoras e inicio) a archivos CSV/JSON.'+
+    $warning='Se exportarán configuraciones técnicas (IP, gateways, DNS, impresoras e inicio) a archivos CSV/JSON. No se guardarán argumentos de ejecución de programas.'+
         [Environment]::NewLine+'Puede incluir direcciones IP, nombres de usuario y rutas de programas. NO incluye contraseñas de Wi-Fi ni claves de autenticación.'+
         [Environment]::NewLine+'Esto NO es un respaldo completo ni podrá restaurar el sistema automáticamente. ¿Continuar?'
     if([Windows.Forms.MessageBox]::Show($warning,'Exportar configuración','YesNo','Warning','Button2') -ne [Windows.Forms.DialogResult]::Yes){return}
@@ -232,7 +232,7 @@ function Export-SConfiguration {
             if($printers.Count){$printers|Export-Csv -LiteralPath (Join-Path $dest 'impresoras.csv') -Encoding UTF8 -NoTypeInformation}
         }catch{[void]$notes.Add('Impresoras: '+$_.Exception.Message)}
         try{
-            $startup=@(Get-CimInstance Win32_StartupCommand -ErrorAction Stop|Select-Object Name,Location,User,Command)
+            $startup=@(Get-CimInstance Win32_StartupCommand -ErrorAction Stop|Select-Object Name,Location,User)
             if($startup.Count){$startup|Export-Csv -LiteralPath (Join-Path $dest 'inicio.csv') -Encoding UTF8 -NoTypeInformation}
         }catch{[void]$notes.Add('Inicio: '+$_.Exception.Message)}
         ('Exportación técnica WinCare | DevPoderSEO'+[Environment]::NewLine+'NO contiene claves Wi-Fi ni contraseñas.'+[Environment]::NewLine+'No permite restaurar Windows automáticamente.'+[Environment]::NewLine+($notes -join [Environment]::NewLine))|Set-Content -LiteralPath (Join-Path $dest 'LEEME.txt') -Encoding UTF8
