@@ -94,13 +94,31 @@ function Read-SEvents {
 function Read-SStartup {
     $script:SStartup.Clear()
     try{
+        $os=Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+        if($os.LastBootUpTime){
+            $boot=([datetime]$os.LastBootUpTime).ToString('yyyy-MM-dd HH:mm')
+            [void]$script:SStartup.Rows.Add([object[]]@('Último arranque de Windows','Sistema','','',$boot+' · Referencia de estabilidad, no determina una falla.'))
+        }
+    }catch{
+        [void]$script:SStartup.Rows.Add([object[]]@('Arranque no verificable','Sistema','','',('No se pudo consultar: '+$_.Exception.Message)))
+    }
+    foreach($name in @('Spooler','wuauserv','BITS','Dhcp','Dnscache','EventLog','LanmanWorkstation')){
+        try {
+            $svc=Get-Service -Name $name -ErrorAction Stop
+            $detail='Estado: '+[string]$svc.Status+'; Inicio: '+[string]$svc.StartType
+            [void]$script:SStartup.Rows.Add([object[]]@($svc.DisplayName,'Servicio Windows','',$detail,'Algunos servicios se inician bajo demanda. No los deshabilites sin conocer su dependencia.'))
+        }catch{
+            [void]$script:SStartup.Rows.Add([object[]]@($name,'Servicio Windows','','No verificable','Puede estar ausente o restringido por el sistema.'))
+        }
+    }
+    try{
         foreach($entry in @(Get-CimInstance Win32_StartupCommand -ErrorAction Stop | Select-Object -First 200)){
             [void]$script:SStartup.Rows.Add([object[]]@([string]$entry.Name,[string]$entry.Location,[string]$entry.User,[string]$entry.Command,'Entrada registrada, no necesariamente activa o maliciosa.'))
         }
     }catch {
-        [void]$script:SStartup.Rows.Add([object[]]@('Consulta parcial','','','',('No fue posible consultar: '+$_.Exception.Message)))
+        [void]$script:SStartup.Rows.Add([object[]]@('Consulta de inicio parcial','','','',('No fue posible consultar: '+$_.Exception.Message)))
     }
-    $script:SStatus.Text=('Entradas de inicio: '+$script:SStartup.Rows.Count+'. No se deshabilitó nada.')
+    $script:SStatus.Text=('Observaciones de arranque, servicios e inicio: '+$script:SStartup.Rows.Count+'. No se modificó nada.')
 }
 function Open-STool([string]$Type){
     $apps=@{
