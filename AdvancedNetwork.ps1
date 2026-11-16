@@ -229,7 +229,11 @@ function Run-PPerformance {
         $lossLimit=20.0
         $value=[double]0
         if([double]::TryParse([string]$script:PLoss.Text,[ref]$value) -and $value -ge 0 -and $value -le 100){$lossLimit=$value}
-        $state=Get-WCProSeverity $sum $lossLimit 150 40
+        $rttLimit=150.0
+        $jitterLimit=40.0
+        if([double]::TryParse([string]$script:PRtt.Text,[ref]$value) -and $value -ge 1 -and $value -le 5000){$rttLimit=$value}
+        if([double]::TryParse([string]$script:PJitter.Text,[ref]$value) -and $value -ge 1 -and $value -le 2000){$jitterLimit=$value}
+        $state=Get-WCProSeverity $sum $lossLimit $rttLimit $jitterLimit
         [void]$script:PMetrics.Rows.Add([object[]]@((Get-Date -Format 'yyyy-MM-dd HH:mm:ss'),$ip,([string]$sum.LossPct+'%'),([string]$sum.AverageMs+' ms'),([string]$sum.JitterMs+' ms'),$state))
         $bandwidth='Contadores de interfaz no disponibles'
         if($before -and $after -and $clock.Elapsed.TotalSeconds -gt 0.01){
@@ -467,7 +471,7 @@ $pages['Topología'].Controls.Add($topNote);$topNote.BringToFront()
 $metricGrid=New-PGrid $script:PMetrics
 $pages['Rendimiento'].Controls.Add($metricGrid)
 $metricBar=New-Object Windows.Forms.FlowLayoutPanel
-$metricBar.Dock='Top';$metricBar.Height=53
+$metricBar.Dock='Top';$metricBar.Height=92
 $targetNote=New-Object Windows.Forms.Label
 $targetNote.Text='Destino IP (vacío = gateway)';$targetNote.Width=175;$targetNote.Height=32;$metricBar.Controls.Add($targetNote)
 $script:PTarget=New-Object Windows.Forms.TextBox
@@ -475,10 +479,18 @@ $script:PTarget.Width=190;$metricBar.Controls.Add($script:PTarget)
 $lossNote=New-Object Windows.Forms.Label
 $lossNote.Text='Alerta pérdida %';$lossNote.Width=125;$lossNote.Height=30;$metricBar.Controls.Add($lossNote)
 $script:PLoss=New-Object Windows.Forms.TextBox
-$script:PLoss.Text='20';$script:PLoss.Width=65;$metricBar.Controls.Add($script:PLoss)
+$script:PLoss.Text='20';$script:PLoss.Width=60;$metricBar.Controls.Add($script:PLoss)
+$rttLabel=New-Object Windows.Forms.Label
+$rttLabel.Text='Alerta RTT ms';$rttLabel.Width=102;$rttLabel.Height=30;$metricBar.Controls.Add($rttLabel)
+$script:PRtt=New-Object Windows.Forms.TextBox
+$script:PRtt.Text='150';$script:PRtt.Width=60;$metricBar.Controls.Add($script:PRtt)
+$jitterLabel=New-Object Windows.Forms.Label
+$jitterLabel.Text='Alerta jitter ms';$jitterLabel.Width=114;$jitterLabel.Height=30;$metricBar.Controls.Add($jitterLabel)
+$script:PJitter=New-Object Windows.Forms.TextBox
+$script:PJitter.Text='40';$script:PJitter.Width=60;$metricBar.Controls.Add($script:PJitter)
 $metricInfo=New-Object Windows.Forms.Label
 $metricInfo.Text='5 pings por clic · jitter aproximado · estado orientativo, sin SLA continuo'
-$metricInfo.Width=440;$metricInfo.Height=36;$metricInfo.ForeColor=$script:PWarn
+$metricInfo.Width=750;$metricInfo.Height=36;$metricInfo.ForeColor=$script:PWarn
 $metricBar.Controls.Add($metricInfo)
 $pages['Rendimiento'].Controls.Add($metricBar);$metricBar.BringToFront()
 $script:PToolOutput=New-Object Windows.Forms.TextBox
