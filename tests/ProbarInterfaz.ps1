@@ -17,4 +17,6 @@ Write-Host 'Probando catálogo de recomendaciones sin escribir reglas...'
 & (Join-Path $root 'AppRecommendations.ps1') -SmokeTest
 Write-Host 'Probando Taller técnico sin leer equipos ni ejecutar reparaciones...'
 & (Join-Path $root 'TechToolkit.ps1') -SmokeTest
-Write-Host 'OK: seis interfaces construidas sin acciones destructivas.'
+Write-Host 'Probando panel de diagnóstico de redes sin generar tráfico...'
+& (Join-Path $root 'NetworkDiagnostics.ps1') -SmokeTest
+Write-Host 'OK: siete interfaces construidas sin operaciones destructivas ni pruebas de red.'
