@@ -5,6 +5,7 @@
 # Uso: inventario, auditoria y desinstalacion selectiva conservadora.
 # Nunca deshabilita Windows Update, Defender, servicios ni controladores.
 #requires -Version 5.1
+param([switch]$SmokeTest)
 
 $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'Este programa solamente funciona en Windows.' }
@@ -501,7 +502,7 @@ foreach ($name in $script:Categories) {
     $grid.AllowUserToDeleteRows = $false
     $grid.SelectionMode = 'FullRowSelect'
     $grid.MultiSelect = $false
-    $grid.AutoGenerateColumns = $true
+    $grid.AutoGenerateColumns = $false
     $grid.AutoSizeColumnsMode = 'Fill'
     $grid.RowHeadersVisible = $false
     $grid.BackgroundColor = $script:Palette.Panel
@@ -515,11 +516,23 @@ foreach ($name in $script:Categories) {
     $grid.DefaultCellStyle.SelectionBackColor = [System.Drawing.Color]::FromArgb(39, 104, 169)
     $grid.DefaultCellStyle.SelectionForeColor = [System.Drawing.Color]::White
     $grid.AlternatingRowsDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(33, 45, 61)
-    $grid.DataSource = $script:Tables[$name].DefaultView
-    foreach ($hidden in @('Detalle','Clave','DatoExtra')) { $grid.Columns[$hidden].Visible = $false }
-    foreach ($pair in @(@('Nombre',250),@('Tipo',100),@('Versión',100),@('Fabricante',170),@('Estado',145),@('Riesgo',95),@('Acción',90))) {
-        $grid.Columns[$pair[0]].FillWeight = [single]$pair[1]
+    # Definir columnas antes de asignar DataSource: WinForms puede postergar la autogeneración
+    # hasta que el control tenga un BindingContext. Nunca asumir Columns[$name] existente.
+    $weights = @{ 'Nombre'=250; 'Tipo'=100; 'Versión'=100; 'Fabricante'=170; 'Estado'=145; 'Riesgo'=95; 'Acción'=90 }
+    foreach ($dataColumn in $script:Tables[$name].Columns) {
+        $columnName = [string]$dataColumn.ColumnName
+        $column = New-Object System.Windows.Forms.DataGridViewTextBoxColumn
+        $column.Name = $columnName
+        $column.DataPropertyName = $columnName
+        $column.HeaderText = $columnName
+        if ($columnName -in @('Detalle','Clave','DatoExtra')) {
+            $column.Visible = $false
+        } elseif ($weights.ContainsKey($columnName)) {
+            $column.FillWeight = [single]$weights[$columnName]
+        }
+        [void]$grid.Columns.Add($column)
     }
+    $grid.DataSource = $script:Tables[$name].DefaultView
     $grid.Add_SelectionChanged({ Update-Detail })
     $page.Controls.Add($grid)
     $script:Grids[$name] = $grid
@@ -623,4 +636,24 @@ $form.Add_Shown({
     [System.Windows.Forms.Application]::DoEvents()
     Refresh-Inventory
 })
+if ($SmokeTest) {
+    # Prueba segura de inicialización: no muestra la ventana ni ejecuta inventario.
+    foreach ($category in $script:Categories) {
+        $table = $script:Tables[$category]
+        $grid = $script:Grids[$category]
+        if ($null -eq $grid -or $grid.Columns.Count -ne $table.Columns.Count) {
+            throw ("Columnas no inicializadas en " + $category)
+        }
+        foreach ($dataColumn in $table.Columns) {
+            $columnName = [string]$dataColumn.ColumnName
+            if ($null -eq $grid.Columns[$columnName]) { throw ("Falta la columna " + $columnName + " en " + $category) }
+            if ($columnName -in @('Detalle','Clave','DatoExtra') -and $grid.Columns[$columnName].Visible) {
+                throw ("Columna interna visible por error: " + $columnName)
+            }
+        }
+    }
+    Write-Host 'OK: Inicialización de 7 tablas WinCare y columnas protegidas.'
+    $form.Dispose()
+    return
+}
 [void]$form.ShowDialog()
