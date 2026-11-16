@@ -469,12 +469,7 @@ $script:CForm.Add_Shown({
         $script:CStatus.Text='No se pudo leer el catálogo: '+$_.Exception.Message
         [void][Windows.Forms.MessageBox]::Show(('Catálogo no legible: '+$_.Exception.Message+'. Se bloquearon los cambios para no sobrescribirlo.'),'Revisión de configuración','OK','Warning')
     }
-    try{
-        Load-CInterfaces
-    }catch{
-        $script:CStatus.Text='La red local no se pudo consultar; puedes administrar el catálogo sin ejecutar pruebas: '+$_.Exception.Message
-        [void][Windows.Forms.MessageBox]::Show('No se pudieron consultar adaptadores. Podrás gestionar el catálogo, pero ninguna prueba de red estará disponible hasta resolver el problema.','Adaptadores no disponibles','OK','Information')
-    }
+    $script:CStatus.Text='Catálogo cargado sin pruebas de red. Para diagnosticar un equipo pulsa Actualizar adaptadores y confirma la prueba.'
 })
 try{
     if($Owner -is [Windows.Forms.IWin32Window]){[void]$script:CForm.ShowDialog($Owner)}
