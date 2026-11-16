@@ -93,6 +93,7 @@ function Get-WCProCapabilityMatrix {
         [pscustomobject]@{Protocolo='SNR, interferencia, mapa de calor Wi-Fi';Estado='Requiere mediciones';Detalle='Windows ofrece señal/canal; heatmap y SNR fiables precisan puntos de medición y/o hardware.'}
         [pscustomobject]@{Protocolo='Alertas correo / SMS / web / móvil';Estado='Requiere servicio';Detalle='Para alertas persistentes se necesita un agente o servidor, credenciales y autorizaciones.'}
         [pscustomobject]@{Protocolo='Topología L2 física';Estado='Requiere LLDP/SNMP';Detalle='Sin vecinos LLDP, puertos y tablas de bridge solo se produce un mapa lógico inferido.'}
+        [pscustomobject]@{Protocolo='Huella SHA256 de configuración';Estado='Integrado manual';Detalle='Compara exportaciones locales aprobadas; no guarda archivos completos ni realiza backup automático del equipo.'}
         [pscustomobject]@{Protocolo='PDF';Estado='Imprimible';Detalle='Se genera HTML/CSV; puedes imprimir el HTML mediante Microsoft Print to PDF.'}
     )
 }
