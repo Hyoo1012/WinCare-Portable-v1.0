@@ -5,11 +5,15 @@ DISEÑADO POR DEVPODERSEO
 1. Descarga todos los archivos desde GitHub (Code > Download ZIP).
 2. Descomprime en Ventoy:\Herramientas\WinCarePortable\
 3. Inicia Windows normalmente y ejecuta INICIAR_WINCARE.bat.
-4. Pulsa ANALIZAR PC para inventario del sistema.
-5. Pulsa SEGURIDAD DE RED E IP para ver conexiones TCP/UDP, procesos,
+4. Si WinCare pide permisos elevados, autoriza el aviso UAC para
+   consultar apps aprovisionadas, características y capacidades.
+   Si lo rechazas, sigue en modo limitado y puedes usar SOLICITAR PERMISOS.
+   Los permisos de administrador NO habilitan desinstalaciones automáticamente.
+5. Pulsa ANALIZAR PC para inventario del sistema.
+6. Pulsa SEGURIDAD DE RED E IP para ver conexiones TCP/UDP, procesos,
    equipos en caché ARP/ND, IP, DNS, gateway y perfiles de firewall.
-6. Exporta informes CSV antes de realizar cambios.
-7. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
+7. Exporta informes CSV antes de realizar cambios.
+8. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
    con habilitación y confirmación. No hay eliminaciones masivas.
 
 ADVERTENCIAS
