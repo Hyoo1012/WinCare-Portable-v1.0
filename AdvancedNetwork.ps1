@@ -83,11 +83,15 @@ function Read-PAdapters {
 }
 function Read-PTrusted {
     $script:PTrusted=@()
-    $candidate=Join-Path $PSScriptRoot 'Red-Confiables.json'
-    if(-not (Test-Path -LiteralPath $candidate -PathType Leaf)){
-        $candidate=Join-Path (Join-Path $PSScriptRoot 'Reportes') 'Red-Confiables.json'
+    $candidate=''
+    foreach($path in @(
+        (Join-Path $PSScriptRoot 'Red-Confiables.json'),
+        (Join-Path (Join-Path $PSScriptRoot 'Reportes') 'Red-Confiables.json'),
+        (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WinCarePortable\Reportes\Red-Confiables.json')
+    )){
+        if(Test-Path -LiteralPath $path -PathType Leaf){$candidate=$path;break}
     }
-    if(-not (Test-Path -LiteralPath $candidate -PathType Leaf)){return}
+    if(-not $candidate){return}
     try{
         $file=Get-Item -LiteralPath $candidate -Force -ErrorAction Stop
         if($file.Length -gt 524288){throw 'El catálogo de confianza supera 512 KB.'}
