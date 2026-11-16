@@ -1,4 +1,4 @@
-WINCARE PORTABLE v1.5
+WINCARE PORTABLE v1.6
 DISEÑADO POR DEVPODERSEO
 =======================
 
@@ -41,7 +41,24 @@ DISEÑADO POR DEVPODERSEO
 15. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
    con habilitación y confirmación. No hay eliminaciones masivas.
 
+REDES v1.6 - DIAGNOSTICO INTELIGENTE
+1. Abre WinCare > 02 RED E IP > ABRIR DIAGNOSTICO INTELIGENTE.
+2. El primer analisis de IP, DHCP, DNS, gateway, IPv6, Wi-Fi y
+   vecinos ARP es de SOLO LECTURA.
+3. Para hacer pruebas de Internet, descubrir hasta 16 IPv4 privadas,
+   explorar redes Wi-Fi o probar un unico puerto TCP, marca que estas
+   AUTORIZADO y acepta el aviso de cada prueba.
+4. El MAPA LAN es un esquema de observaciones, no topologia fisica.
+   Una IP desconocida no confirma intrusos; un ping fallido no
+   demuestra que un equipo este apagado.
+5. Exporta diagnostico HTML/CSV para registrar evidencias tecnicas.
+   Revisa IP y MAC antes de compartirlo con clientes.
+
 ADVERTENCIAS
+- Las pruebas activas hacen trafico y pueden quedar registradas.
+- Ping externo 1.1.1.1, DNS example.com y HTTPS microsoft.com solo
+  con autorizacion; proveedores pueden ver tu IP de salida.
+- No se escanean redes publicas ni se modifican DNS, IP o firewall.
 - Las recomendaciones no reemplazan la evaluación del técnico.
 - Antes de reparar o exportar drivers, comprueba respaldos y espacio libre.
 - SFC /scannow y DISM /RestoreHealth son reparaciones opcionales que pueden modificar Windows.
