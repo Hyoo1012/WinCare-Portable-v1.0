@@ -156,47 +156,69 @@ foreach($name in @('Tipo','Nombre','Fabricante','Recomendacion','Motivo')){
 }
 $script:RGrid.DataSource=$script:RTable.DefaultView
 $script:RGrid.Add_SelectionChanged({ Fill-REditor })
+$script:RGrid.Add_CellFormatting({
+    param($sender,$eventArgs)
+    if($eventArgs.RowIndex -lt 0 -or $eventArgs.ColumnIndex -lt 0){return}
+    if([string]$sender.Columns[$eventArgs.ColumnIndex].Name -ne 'Recomendacion'){return}
+    if([string]$eventArgs.Value -eq 'Conservar'){$eventArgs.CellStyle.ForeColor=[Drawing.Color]::FromArgb(135,222,183)}
+    elseif([string]$eventArgs.Value -eq 'Opcional'){$eventArgs.CellStyle.ForeColor=[Drawing.Color]::FromArgb(115,197,253)}
+})
 $script:RForm.Controls.Add($script:RGrid)
 
 $panel=New-Object Windows.Forms.Panel
-$panel.Location=New-Object Drawing.Point(22,468)
-$panel.Size=New-Object Drawing.Size(1044,210)
+$panel.Location=New-Object Drawing.Point(22,462)
+$panel.Size=New-Object Drawing.Size(1044,226)
 $panel.Anchor='Bottom,Left,Right'
 $panel.BackColor=$script:RColors.Panel
 $script:RForm.Controls.Add($panel)
 $editLabel=New-Object Windows.Forms.Label
 $editLabel.Text='Editar o agregar una recomendación'
 $editLabel.Font=New-Object Drawing.Font('Segoe UI Semibold',11,[Drawing.FontStyle]::Bold)
-$editLabel.Location=New-Object Drawing.Point(14,12)
+$editLabel.Location=New-Object Drawing.Point(14,9)
 $editLabel.Size=New-Object Drawing.Size(500,26)
 $panel.Controls.Add($editLabel)
+$labels=@(
+    @('Tipo',14,125),
+    @('Nombre exacto',149,390),
+    @('Fabricante',560,280),
+    @('Recomendación',850,170),
+    @('Motivo de la decisión',14,530)
+)
+foreach($entry in $labels){
+    $caption=New-Object Windows.Forms.Label
+    $caption.Text=[string]$entry[0]
+    $caption.Location=New-Object Drawing.Point([int]$entry[1],$(if([string]$entry[0] -eq 'Motivo de la decisión'){96}else{43}))
+    $caption.Size=New-Object Drawing.Size([int]$entry[2],18)
+    $caption.ForeColor=$script:RColors.Muted
+    $panel.Controls.Add($caption)
+}
 $script:RType=New-Object Windows.Forms.ComboBox
 $script:RType.DropDownStyle='DropDownList'
 $script:RType.Items.AddRange([object[]]@('Appx','Win32'))
-$script:RType.Location=New-Object Drawing.Point(14,49)
+$script:RType.Location=New-Object Drawing.Point(14,65)
 $script:RType.Size=New-Object Drawing.Size(125,28)
 $script:RType.SelectedIndex=0
 $panel.Controls.Add($script:RType)
 $script:RName=New-Object Windows.Forms.TextBox
-$script:RName.Location=New-Object Drawing.Point(149,49)
+$script:RName.Location=New-Object Drawing.Point(149,65)
 $script:RName.Size=New-Object Drawing.Size(400,28)
 $script:RName.Anchor='Top,Left,Right'
 $panel.Controls.Add($script:RName)
 $script:RPublisher=New-Object Windows.Forms.TextBox
-$script:RPublisher.Location=New-Object Drawing.Point(560,49)
+$script:RPublisher.Location=New-Object Drawing.Point(560,65)
 $script:RPublisher.Size=New-Object Drawing.Size(280,28)
 $script:RPublisher.Anchor='Top,Right'
 $panel.Controls.Add($script:RPublisher)
 $script:RChoice=New-Object Windows.Forms.ComboBox
 $script:RChoice.DropDownStyle='DropDownList'
 $script:RChoice.Items.AddRange([object[]]@('Conservar','Opcional'))
-$script:RChoice.Location=New-Object Drawing.Point(850,49)
+$script:RChoice.Location=New-Object Drawing.Point(850,65)
 $script:RChoice.Size=New-Object Drawing.Size(170,28)
 $script:RChoice.Anchor='Top,Right'
 $script:RChoice.SelectedIndex=0
 $panel.Controls.Add($script:RChoice)
 $script:RReason=New-Object Windows.Forms.TextBox
-$script:RReason.Location=New-Object Drawing.Point(14,89)
+$script:RReason.Location=New-Object Drawing.Point(14,117)
 $script:RReason.Size=New-Object Drawing.Size(1006,38)
 $script:RReason.Anchor='Top,Left,Right'
 $script:RReason.Multiline=$true
@@ -204,7 +226,7 @@ $script:RReason.Text='Indica por qué conservarlo o por qué es opcional.'
 $panel.Controls.Add($script:RReason)
 $script:RSave=New-Object Windows.Forms.Button
 $script:RSave.Text='Guardar recomendación'
-$script:RSave.Location=New-Object Drawing.Point(14,147)
+$script:RSave.Location=New-Object Drawing.Point(14,173)
 $script:RSave.Size=New-Object Drawing.Size(224,41)
 $script:RSave.BackColor=$script:RColors.Accent
 $script:RSave.ForeColor=[Drawing.Color]::White
@@ -213,19 +235,19 @@ $script:RSave.Add_Click({ Save-RSelected })
 $panel.Controls.Add($script:RSave)
 $script:RRemove=New-Object Windows.Forms.Button
 $script:RRemove.Text='Quitar regla'
-$script:RRemove.Location=New-Object Drawing.Point(250,147)
+$script:RRemove.Location=New-Object Drawing.Point(250,173)
 $script:RRemove.Size=New-Object Drawing.Size(160,41)
 $script:RRemove.Add_Click({ Remove-RSelected })
 $panel.Controls.Add($script:RRemove)
 $script:RExport=New-Object Windows.Forms.Button
 $script:RExport.Text='Exportar CSV'
-$script:RExport.Location=New-Object Drawing.Point(420,147)
+$script:RExport.Location=New-Object Drawing.Point(420,173)
 $script:RExport.Size=New-Object Drawing.Size(160,41)
 $script:RExport.Add_Click({ Export-RRules })
 $panel.Controls.Add($script:RExport)
 $script:RCount=New-Object Windows.Forms.Label
 $script:RCount.Text='Sin reglas guardadas.'
-$script:RCount.Location=New-Object Drawing.Point(22,693)
+$script:RCount.Location=New-Object Drawing.Point(22,709)
 $script:RCount.Size=New-Object Drawing.Size(1044,28)
 $script:RCount.Anchor='Bottom,Left,Right'
 $script:RCount.ForeColor=$script:RColors.Muted
