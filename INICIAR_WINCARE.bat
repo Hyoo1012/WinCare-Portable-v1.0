@@ -8,6 +8,12 @@ if not exist "%~dp0WinCare.ps1" (
   pause
   exit /b 1
 )
+if not exist "%~dp0AdvancedNetworkCore.ps1" (
+  echo ADVERTENCIA: falta AdvancedNetworkCore.ps1. Centro avanzado de redes deshabilitado.
+)
+if not exist "%~dp0AdvancedNetwork.ps1" (
+  echo ADVERTENCIA: falta AdvancedNetwork.ps1. Centro avanzado de redes deshabilitado.
+)
 if not exist "%~dp0NetworkAudit.ps1" (
   echo ADVERTENCIA: falta NetworkAudit.ps1. Seguridad de red no estara disponible.
 )
