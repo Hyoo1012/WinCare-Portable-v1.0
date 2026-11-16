@@ -309,7 +309,7 @@ $reportTab=New-Object Windows.Forms.TabPage
 $reportTab.Text='Informes';$reportTab.BackColor=$script:CColors.Panel
 [void]$script:CTabs.TabPages.AddRange([Windows.Forms.TabPage[]]@($inventTab,$testTab,$mapTab,$reportTab))
 $script:CGrid=New-CGrid $script:CTable
-$script:CGrid.Dock='Top';$script:CGrid.Height=280;$script:CGrid.Anchor='Top,Left,Right'
+$script:CGrid.Dock='None';$script:CGrid.Location=New-Object Drawing.Point(0,0);$script:CGrid.Size=New-Object Drawing.Size(1120,280);$script:CGrid.Anchor='Top,Left,Right'
 $inventTab.Controls.Add($script:CGrid)
 $script:CGrid.Add_SelectionChanged({Set-CEditor})
 # Los campos se dibujan directamente sobre la pestaña: no crear un Panel Dock=Fill
@@ -464,11 +464,16 @@ if($SafetyTest){
 $script:CForm.Add_Shown({
     try{
         Read-Catalog
-        Load-CInterfaces
     }catch{
         $script:CSavedOK=$false
-        $script:CStatus.Text='No se pudo leer el catálogo o la configuración de red: '+$_.Exception.Message
-        [void][Windows.Forms.MessageBox]::Show(('No se modificó el catálogo. Verifica el archivo original antes de continuar: '+$_.Exception.Message),'Revisión de configuración','OK','Warning')
+        $script:CStatus.Text='No se pudo leer el catálogo: '+$_.Exception.Message
+        [void][Windows.Forms.MessageBox]::Show(('Catálogo no legible: '+$_.Exception.Message+'. Se bloquearon los cambios para no sobrescribirlo.'),'Revisión de configuración','OK','Warning')
+    }
+    try{
+        Load-CInterfaces
+    }catch{
+        $script:CStatus.Text='La red local no se pudo consultar; puedes administrar el catálogo sin ejecutar pruebas: '+$_.Exception.Message
+        [void][Windows.Forms.MessageBox]::Show('No se pudieron consultar adaptadores. Podrás gestionar el catálogo, pero ninguna prueba de red estará disponible hasta resolver el problema.','Adaptadores no disponibles','OK','Information')
     }
 })
 try{
