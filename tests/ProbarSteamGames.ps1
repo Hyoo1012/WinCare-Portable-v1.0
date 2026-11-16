@@ -32,6 +32,29 @@ try{
     Set-Content -LiteralPath $new -Encoding UTF8 -Value $vdf.Replace('"570"','"440"').Replace('"Dota 2"','"Team Fortress 2"')
     $all=@(Get-WCSteamGamesFromLibraries -Libraries @($temp,$temp))
     if($all.Count -ne 2){throw 'No se deduplicaron bibliotecas o se perdieron juegos.'}
+    $other=Join-Path $temp 'SegundaBiblioteca'
+    $otherApps=Join-Path $other 'steamapps'
+    [void](New-Item -Path $otherApps -ItemType Directory -Force)
+    $otherManifest=Join-Path $otherApps 'appmanifest_620.acf'
+    Set-Content -LiteralPath $otherManifest -Encoding UTF8 -Value $vdf.Replace('"570"','"620"').Replace('"Dota 2"','"Portal 2"')
+    $escaped=$other.Replace('\','\\')
+    $libraryVdf=@'
+"libraryfolders"
+{
+    "0" { "path" "STEAM_ROOT" }
+    "1"
+    {
+        "path" "SECOND_ROOT"
+    }
+}
+'@
+    $libraryVdf=$libraryVdf.Replace('STEAM_ROOT',$temp.Replace('\','\\')).Replace('SECOND_ROOT',$escaped)
+    Set-Content -LiteralPath (Join-Path $steamapps 'libraryfolders.vdf') -Encoding UTF8 -Value $libraryVdf
+    function Get-WCSteamExecutable { return (Join-Path $temp 'steam.exe') }
+    $libraries=@(Get-WCSteamLibraries)
+    if($libraries -notcontains $temp -or $libraries -notcontains $other){throw 'No se detectó una biblioteca adicional definida en libraryfolders.vdf.'}
+    $allGames=@(Get-WCSteamGamesFromLibraries -Libraries $libraries)
+    if($allGames.Count -lt 3){throw 'No se detectaron juegos de bibliotecas de Steam en varios discos/carpetas.'}
     Write-Host 'OK: biblioteca Steam sin registro, Dota 2 570, múltiples juegos, duplicados y manifiestos inválidos bloqueados.'
 }finally{
     Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue
