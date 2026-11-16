@@ -1153,7 +1153,11 @@ if ($SmokeTest) {
     $script:PolicyRules += (Test-WCPolicyEntry ([pscustomobject]@{Tipo='Appx';Nombre='Microsoft.WindowsStore';Fabricante='';Recomendacion='Opcional';Motivo='La regla no debe desbloquear'}))
     Add-InventoryRecord 'Apps Store' 'Appx/MSIX' 'Clipchamp.Clipchamp' '1.0' 'Publisher' 'Instalada' 'Bajo' 'Appx' 'Paquete opcional de prueba' 'Clipchamp.test'
     Add-InventoryRecord 'Apps Store' 'Appx/MSIX' 'Microsoft.WindowsStore' '1.0' 'Microsoft' 'Instalada' 'Protegido' 'Bloqueada' 'Componente crítico' 'Store.test'
+    $steamPlan=Get-WCDesktopUninstallPlan -Name 'Dota 2' -Key 'Steam App 570' -UninstallString '"C:\Program Files (x86)\Steam\steam.exe" steam://uninstall/570' -WindowsInstaller '0'
+    if($steamPlan.Method -ne 'Steam' -or $steamPlan.Id -ne '570'){throw 'No se habilitó Dota 2 vía Steam.'}
+    Add-InventoryRecord 'Programas' 'Win32' 'Dota 2' '2.0' 'Valve' 'Registrado' 'Medio' ([string]$steamPlan.Method) 'Se abre la desinstalación de Steam.' 'Steam App 570' 'Registry::HKEY_LOCAL_MACHINE\Steam App 570'
     Apply-WinCareRules
+    if([string]$script:Tables['Programas'].Rows[0]['Acción'] -ne 'Steam'){throw 'Dota 2 se bloqueó durante el inventario.'}
     if([string]$script:Tables['Apps Store'].Rows[0]['Acción'] -ne 'Bloqueada'){throw 'La regla Conservar no bloqueó desinstalar.'}
     if([string]$script:Tables['Apps Store'].Rows[1]['Acción'] -ne 'Bloqueada'){throw 'Opcional desbloqueó un componente esencial.'}
     Reset-Inventory
