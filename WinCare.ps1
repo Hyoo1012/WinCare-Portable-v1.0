@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v1.1
+﻿# WinCare Portable - v1.2
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -613,7 +613,7 @@ $form.Controls.Add($script:DetailLabel)
 $script:RemoveButton = New-Object System.Windows.Forms.Button
 $script:RemoveButton.Text = 'Desinstalar seleccionado'
 $script:RemoveButton.Location = New-Object System.Drawing.Point(20, 673)
-$script:RemoveButton.Size = New-Object System.Drawing.Size(205, 33)
+$script:RemoveButton.Size = New-Object System.Drawing.Size(180, 33)
 $script:RemoveButton.Anchor = 'Bottom,Left'
 $script:RemoveButton.BackColor = [System.Drawing.Color]::FromArgb(160, 67, 63)
 $script:RemoveButton.ForeColor = [System.Drawing.Color]::White
@@ -624,32 +624,32 @@ $script:RemoveButton.Add_Click({ Uninstall-Selected })
 
 $windowsBtn = New-Object System.Windows.Forms.Button
 $windowsBtn.Text = 'Desinstalar desde Windows'
-$windowsBtn.Location = New-Object System.Drawing.Point(235, 673)
-$windowsBtn.Size = New-Object System.Drawing.Size(196, 33)
+$windowsBtn.Location = New-Object System.Drawing.Point(208, 673)
+$windowsBtn.Size = New-Object System.Drawing.Size(174, 33)
 $windowsBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($windowsBtn)
 $windowsBtn.Add_Click({ Open-WindowsUninstall })
 
 $restoreBtn = New-Object System.Windows.Forms.Button
 $restoreBtn.Text = 'Punto restauración'
-$restoreBtn.Location = New-Object System.Drawing.Point(440, 673)
-$restoreBtn.Size = New-Object System.Drawing.Size(167, 33)
+$restoreBtn.Location = New-Object System.Drawing.Point(390, 673)
+$restoreBtn.Size = New-Object System.Drawing.Size(142, 33)
 $restoreBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($restoreBtn)
 $restoreBtn.Add_Click({ Request-RestorePoint })
 
 $exportBtn = New-Object System.Windows.Forms.Button
 $exportBtn.Text = 'Exportar inventario'
-$exportBtn.Location = New-Object System.Drawing.Point(616, 673)
-$exportBtn.Size = New-Object System.Drawing.Size(167, 33)
+$exportBtn.Location = New-Object System.Drawing.Point(540, 673)
+$exportBtn.Size = New-Object System.Drawing.Size(150, 33)
 $exportBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($exportBtn)
 $exportBtn.Add_Click({ Export-Inventory })
 
 $folderBtn = New-Object System.Windows.Forms.Button
 $folderBtn.Text = 'Ver reportes'
-$folderBtn.Location = New-Object System.Drawing.Point(791, 673)
-$folderBtn.Size = New-Object System.Drawing.Size(127, 33)
+$folderBtn.Location = New-Object System.Drawing.Point(698, 673)
+$folderBtn.Size = New-Object System.Drawing.Size(118, 33)
 $folderBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($folderBtn)
 $folderBtn.Add_Click({
@@ -659,13 +659,13 @@ $folderBtn.Add_Click({
 
 $helpBtn = New-Object System.Windows.Forms.Button
 $helpBtn.Text = 'Ayuda y seguridad'
-$helpBtn.Location = New-Object System.Drawing.Point(928, 673)
-$helpBtn.Size = New-Object System.Drawing.Size(150, 33)
+$helpBtn.Location = New-Object System.Drawing.Point(823, 673)
+$helpBtn.Size = New-Object System.Drawing.Size(132, 33)
 $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.1 - Diseñado por DevPoderSEO
+WinCare Portable v1.2 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Solo permite quitar Appx expresamente aprobadas y MSI verificados.
@@ -676,6 +676,9 @@ WinCare Portable v1.1 - Diseñado por DevPoderSEO
 - No elimina aplicaciones de otros usuarios ni aprovisionadas para cuentas nuevas.
 - Si se ha usado Ejecutar como otro usuario, Appx se detecta para ese usuario.
 - El inventario puede ser parcial sin permisos elevados y no detecta todos los programas portátiles.
+- Hardware y salud consulta CPU, RAM, placa madre, BIOS, discos, GPU, red, batería y dispositivos.
+- Incluye msinfo32, dxdiag, Monitor de recursos y otras herramientas de Windows.
+- Salud de disco/SMART y eventos son orientativos; no reemplazan diagnóstico del fabricante.
 - Seguridad de red e IP consulta conexiones TCP/UDP, procesos, dispositivos en caché ARP/ND y firewall.
 - Una conexión o IP desconocida NO confirma intrusión. Contrasta con router, antivirus y registros.
 - No se bloquean conexiones, no se matan procesos ni se realiza escaneo masivo de equipos.
@@ -686,6 +689,28 @@ WinCare Portable v1.1 - Diseñado por DevPoderSEO
 Consulta el README incluido para obtener instrucciones.
 '@
     [void][System.Windows.Forms.MessageBox]::Show($message,'Ayuda y límites de seguridad','OK','Information')
+})
+
+$hardwareBtn = New-Object System.Windows.Forms.Button
+$hardwareBtn.Text = 'Hardware y salud'
+$hardwareBtn.Location = New-Object System.Drawing.Point(963, 673)
+$hardwareBtn.Size = New-Object System.Drawing.Size(148, 33)
+$hardwareBtn.Anchor = 'Bottom,Left'
+$hardwareBtn.BackColor = $script:Palette.Accent
+$hardwareBtn.ForeColor = [System.Drawing.Color]::White
+$hardwareBtn.FlatStyle = 'Flat'
+$form.Controls.Add($hardwareBtn)
+$hardwareBtn.Add_Click({
+    $module = Join-Path $PSScriptRoot 'HardwareAudit.ps1'
+    if (-not (Test-Path -LiteralPath $module -PathType Leaf)) {
+        [void][System.Windows.Forms.MessageBox]::Show('No se encuentra HardwareAudit.ps1. Descarga el proyecto completo desde GitHub.','Módulo de hardware ausente','OK','Warning')
+        return
+    }
+    try { & $module -Owner $form }
+    catch {
+        Write-Audit ('ERROR HARDWARE: '+$_.Exception.Message)
+        [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir hardware y salud','OK','Error')
+    }
 })
 
 $script:StatusLabel = New-Object System.Windows.Forms.Label
@@ -730,7 +755,10 @@ if ($SmokeTest) {
     if (-not $script:AdminButton -or $script:AdminButton.Text -notin @('Admin activo','Solicitar permisos')) {
         throw 'Botón de elevación UAC no inicializado.'
     }
-    Write-Host 'OK: Inicialización de 7 tablas WinCare, columnas protegidas y control UAC.'
+    if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne 'Hardware y salud') {
+        throw 'Botón de hardware y salud no inicializado.'
+    }
+    Write-Host 'OK: 7 tablas WinCare, columnas protegidas, botón hardware y control UAC.'
     $form.Dispose()
     return
 }
