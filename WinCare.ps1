@@ -454,81 +454,134 @@ function Open-WindowsUninstall {
 }
 
 function Uninstall-Selected {
-    if (-not $script:ChangeCheck.Checked) { return }
-    $tab = $script:TabControl.SelectedTab
-    if (-not $tab) { return }
-    $grid = $script:Grids[$tab.Text]
-    if ($grid.SelectedRows.Count -ne 1) {
-        [void][System.Windows.Forms.MessageBox]::Show('Selecciona solo una aplicación o programa por operación.','Selección','OK','Information')
+    $tab=$script:TabControl.SelectedTab
+    if(-not $tab -or $tab.Text -notin @('Apps Store','Programas')){return}
+    $grid=$script:Grids[$tab.Text]
+    if($grid.SelectedRows.Count -ne 1){
+        [void][Windows.Forms.MessageBox]::Show('Selecciona un único programa o aplicación para continuar.','Seleccionar programa','OK','Information')
         return
     }
-    $row = $grid.SelectedRows[0]
-    $name = [string]$row.Cells['Nombre'].Value
-    $action = [string]$row.Cells['Acción'].Value
-    $risk = [string]$row.Cells['Riesgo'].Value
-    $detail = [string]$row.Cells['Detalle'].Value
-    $key = [string]$row.Cells['Clave'].Value
-    $extra = [string]$row.Cells['DatoExtra'].Value
-    if ($action -notin @('Appx','MSI') -or $risk -eq 'Protegido') { return }
-    # Revalidar configuración antes de cada desinstalación; un fallo cancela.
+    $row=$grid.SelectedRows[0]
+    if($row.IsNewRow){return}
+    $name=[string]$row.Cells['Nombre'].Value
+    $publisher=[string]$row.Cells['Fabricante'].Value
+    $risk=[string]$row.Cells['Riesgo'].Value
+    $action=[string]$row.Cells['Acción'].Value
+    $detail=[string]$row.Cells['Detalle'].Value
+    $key=[string]$row.Cells['Clave'].Value
+    $extra=[string]$row.Cells['DatoExtra'].Value
+    if($risk -eq 'Protegido' -or $action -notin @('Appx','MSI','Steam','Uninstaller','Windows')) {
+        [void][Windows.Forms.MessageBox]::Show('Este elemento está protegido o no admite eliminación desde WinCare. No se realizará ningún cambio.','Acción no permitida','OK','Warning')
+        return
+    }
+    if($action -ne 'Windows' -and -not $script:ChangeCheck.Checked){
+        [void][Windows.Forms.MessageBox]::Show('Para desinstalar este elemento marca «Permitir desinstalación» en la parte superior, revisa su riesgo y vuelve a pulsar el botón.','Falta autorización','OK','Information')
+        return
+    }
+
+    # Las reglas Conservar prevalecen y se vuelven a leer al pulsar.
     try {
-        $type=if($tab.Text -eq 'Apps Store'){'Appx'}elseif($tab.Text -eq 'Programas'){'Win32'}else{'Otro'}
-        if($type -eq 'Otro'){throw 'Categoría no permitida.'}
-        $rule=Get-WCPolicyMatch -Rules @(Get-WCPolicyRules) -Type $type -Name $name -Publisher ([string]$row.Cells['Fabricante'].Value)
+        $type=if($tab.Text -eq 'Programas'){'Win32'}else{'Appx'}
+        $rule=Get-WCPolicyMatch -Rules @(Get-WCPolicyRules) -Type $type -Name $name -Publisher $publisher
         if($rule -and $rule.Recomendacion -eq 'Conservar'){
-            [void][Windows.Forms.MessageBox]::Show(('Este programa está marcado como Conservar: '+$name+'. Modifica la regla en Recomendaciones si corresponde.'),'Protegido por el técnico','OK','Warning')
+            [void][Windows.Forms.MessageBox]::Show(('No se permite quitar '+$name+'. Está marcado como Conservar en el catálogo del técnico.','Regla de protección'),'OK','Warning')
             return
         }
     }catch{
-        [void][Windows.Forms.MessageBox]::Show(('No fue posible verificar las reglas: '+$_.Exception.Message+'. Desinstalación cancelada.'),'Protección de programas','OK','Warning')
+        [void][Windows.Forms.MessageBox]::Show(('No se pudo leer el catálogo de recomendaciones: '+$_.Exception.Message+'. Operación cancelada.'),'Protección de aplicaciones','OK','Warning')
         return
     }
 
-    $message = "¿Confirmas la desinstalación?`r`n`r`nPrograma: $name`r`nRiesgo: $risk`r`nConsecuencia: $detail`r`n`r`nADVERTENCIA: podrías perder configuraciones, archivos propios de la aplicación o funciones dependientes. Esta herramienta NO garantiza reversión. Haz una copia de seguridad antes de continuar.`r`n`r`n¿Continuar?"
-    $answer = [System.Windows.Forms.MessageBox]::Show($message,'Confirmar eliminación: posible pérdida de funciones','YesNo','Warning','Button2')
-    if ($answer -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+    $message=(
+        'Programa: '+$name+[Environment]::NewLine+
+        'Editor: '+$publisher+[Environment]::NewLine+
+        'Método: '+$action+[Environment]::NewLine+
+        'Riesgo: '+$risk+[Environment]::NewLine+
+        $detail+[Environment]::NewLine+[Environment]::NewLine+
+        'Podrías perder configuraciones, archivos de aplicaciones, juegos o partidas guardadas localmente.'+
+        [Environment]::NewLine+
+        'Cierra programas y crea un respaldo antes. El proceso podría ser irreversible.'+
+        [Environment]::NewLine+[Environment]::NewLine+'¿Continuar?'
+    )
+    if([Windows.Forms.MessageBox]::Show($message,'Confirmar desinstalación de un solo programa','YesNo','Warning','Button2') -ne [Windows.Forms.DialogResult]::Yes){return}
 
-    $script:RemoveButton.Enabled = $false
-    $script:StatusLabel.Text = 'Desinstalando: ' + $name
-    [System.Windows.Forms.Application]::DoEvents()
-    try {
-        if ($action -eq 'Appx') {
-            $pkg = @(Get-AppxPackage -ErrorAction Stop | Where-Object { $_.PackageFullName -eq $key })
-            if ($pkg.Count -ne 1) { throw 'El paquete ya no existe o no puede identificarse sin ambigüedad.' }
-            $disposition = Get-AppxDisposition $pkg[0]
-            if ($disposition[1] -ne 'Appx' -or $pkg[0].Name -ne $name) { throw 'El paquete no está autorizado para desinstalación.' }
+    $script:RemoveButton.Enabled=$false
+    $script:StatusLabel.Text='Preparando la desinstalación de '+$name+'...'
+    [Windows.Forms.Application]::DoEvents()
+    $refresh=$false
+    try{
+        if($action -eq 'Appx'){
+            $pkg=@(Get-AppxPackage -ErrorAction Stop | Where-Object {$_.PackageFullName -eq $key})
+            if($pkg.Count -ne 1){throw 'El paquete ya no existe o ha cambiado.'}
+            $disposition=Get-AppxDisposition $pkg[0]
+            if($disposition[1] -ne 'Appx' -or $pkg[0].Name -ne $name){throw 'Paquete no autorizado para eliminar.'}
             Remove-AppxPackage -Package $pkg[0].PackageFullName -ErrorAction Stop
-            Write-Audit ('APPX QUITADA (usuario actual): ' + $name + ' / ' + $key)
-            [void][System.Windows.Forms.MessageBox]::Show('Aplicación eliminada del usuario actual. No se modificó el aprovisionamiento para otros usuarios.','Operación completada','OK','Information')
-        } else {
-            # MSI: únicamente código GUID, validado de nuevo contra el registro.
-            if ($key -notmatch '^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$') { throw 'Identificador MSI no válido.' }
-            if (-not (Test-Path -LiteralPath $extra)) { throw 'El registro del desinstalador ya no existe.' }
-            $reg = Get-ItemProperty -LiteralPath $extra -ErrorAction Stop
-            if ([string]$reg.WindowsInstaller -ne '1' -or [string]$reg.DisplayName -ne $name) { throw 'La identidad del programa cambió: operación cancelada.' }
-            if ($name -match $script:CoreProgramPattern -or ([string]$reg.Publisher) -match '(?i)^(Microsoft Corporation|Microsoft|Intel Corporation|NVIDIA Corporation|Advanced Micro Devices|Realtek)\s*$') {
-                throw 'Programa protegido; utiliza el asistente de Windows si sabes exactamente qué estás quitando.'
+            Write-Audit ('APPX ELIMINADA, usuario actual: '+$name)
+            $refresh=$true
+            [void][Windows.Forms.MessageBox]::Show('Se eliminó la app del usuario actual. No se han modificado cuentas de otras personas.','Aplicación eliminada','OK','Information')
+        }
+        else{
+            # Para acciones de Windows basta abrir Ajustes: no se interpreta ningún
+            # comando registrado, ni se afirma que el programa se haya eliminado.
+            if($action -eq 'Windows'){
+                Open-WindowsUninstall
+                Write-Audit ('ABRIR CONFIGURACIÓN DESINSTALAR: '+$name)
+                $script:StatusLabel.Text='Abierto Aplicaciones instaladas. Busca '+$name+' y finaliza allí.'
+                [void][Windows.Forms.MessageBox]::Show(('Se abrió Aplicaciones instaladas de Windows. Busca «'+$name+'», selecciona Desinstalar y confirma en Windows. Al terminar pulsa Analizar PC.'),'Desinstalación desde Windows','OK','Information')
+                return
             }
-            $msi = Join-Path $env:WINDIR 'System32\msiexec.exe'
-            Write-Audit ('MSI SOLICITADO: ' + $name + ' / ' + $key)
-            $result = Start-Process -FilePath $msi -ArgumentList @('/x',$key) -PassThru -Wait -ErrorAction Stop
-            Write-Audit ('MSI FINALIZADO: ' + $name + ' / Código=' + $result.ExitCode)
-            if ($result.ExitCode -eq 3010) {
-                [void][System.Windows.Forms.MessageBox]::Show('El desinstalador solicita reiniciar Windows. Guarda tu trabajo antes.','Reinicio requerido','OK','Information')
-            } elseif ($result.ExitCode -eq 1602) {
-                [void][System.Windows.Forms.MessageBox]::Show('Desinstalación cancelada por el usuario.','Cancelada','OK','Information')
-            } elseif ($result.ExitCode -ne 0) {
-                throw ('El instalador devolvió el código ' + $result.ExitCode + '. Consulta el historial para diagnosticarlo.')
-            } else {
-                [void][System.Windows.Forms.MessageBox]::Show('El desinstalador terminó. Se actualizará el inventario.','Finalizado','OK','Information')
+            if(-not (Test-Path -LiteralPath $extra)){
+                throw 'La entrada de desinstalación no existe. Actualiza el inventario.'
+            }
+            $reg=Get-ItemProperty -LiteralPath $extra -ErrorAction Stop
+            if([string]$reg.DisplayName -ne $name -or [string]$reg.Publisher -ne $publisher){
+                throw 'La identidad del programa cambió desde el inventario. Se canceló la operación.'
+            }
+            if([string]$reg.SystemComponent -eq '1' -or $name -match $script:CoreProgramPattern -or
+                $publisher -match '(?i)^(Microsoft Corporation|Microsoft|Intel Corporation|NVIDIA Corporation|Advanced Micro Devices|Realtek)\s*$'){
+                throw 'Se detectó componente potencialmente esencial. No se desinstalará.'
+            }
+            $current=Get-WCDesktopUninstallPlan -Name $name -Key $key -UninstallString ([string]$reg.UninstallString) -WindowsInstaller ([string]$reg.WindowsInstaller)
+            if($current.Method -ne $action){throw 'El tipo de desinstalador cambió desde el análisis. Vuelve a escanear antes de continuar.'}
+            switch($action){
+                'Steam' {
+                    if([string]$key -ne ('Steam App '+[string]$current.Id)){throw 'La referencia al juego Steam no coincide.'}
+                    Start-WCSteamUninstall ([string]$current.Id)
+                    Write-Audit ('STEAM DESINSTALACIÓN SOLICITADA: '+$name+'; AppId='+$current.Id)
+                    [void][Windows.Forms.MessageBox]::Show(('Se abrió Steam para revisar la desinstalación de '+$name+'. Termina la confirmación dentro de Steam. WinCare NO ha borrado archivos directamente. Vuelve a pulsar Analizar PC cuando Steam finalice.'),'Steam abierto','OK','Information')
+                }
+                'Uninstaller' {
+                    $exe=[string]$current.Exe
+                    $signature=Get-AuthenticodeSignature -FilePath $exe -ErrorAction Stop
+                    if($signature.Status -ne 'Valid'){
+                        throw 'El desinstalador no tiene firma digital válida. Por precaución, WinCare no lo inicia. Utiliza «Aplicaciones Windows» o el desinstalador oficial.'
+                    }
+                    Start-WCInteractiveUninstaller $exe
+                    Write-Audit ('DESINSTALADOR INTERACTIVO INICIADO: '+$name+'; Archivo='+$exe)
+                    [void][Windows.Forms.MessageBox]::Show(('Se abrió el desinstalador de '+$name+'. Revisa cada opción, confirma allí y vuelve a analizar WinCare al finalizar.'),'Asistente abierto','OK','Information')
+                }
+                'MSI' {
+                    if($key -notmatch '^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$'){throw 'Identificador MSI inválido.'}
+                    if([string]$reg.WindowsInstaller -ne '1'){throw 'La entrada ya no se identifica como Windows Installer.'}
+                    $msi=Join-Path $env:WINDIR 'System32\msiexec.exe'
+                    Write-Audit ('MSI DESINSTALACIÓN SOLICITADA: '+$name+' / '+$key)
+                    $process=Start-Process -FilePath $msi -ArgumentList @('/x',$key) -PassThru -Wait -ErrorAction Stop
+                    Write-Audit ('MSI FINALIZADO: '+$name+'; Código='+$process.ExitCode)
+                    switch([int]$process.ExitCode){
+                        0   {$refresh=$true;[void][Windows.Forms.MessageBox]::Show('MSI finalizó sin errores. Se actualizará el inventario.','MSI terminado','OK','Information')}
+                        3010{$refresh=$true;[void][Windows.Forms.MessageBox]::Show('La desinstalación MSI requiere reiniciar Windows. Guarda tu trabajo.','Reinicio necesario','OK','Information')}
+                        1602{[void][Windows.Forms.MessageBox]::Show('Se canceló el asistente MSI. No se confirma eliminación.','Cancelada','OK','Information')}
+                        default {throw ('Windows Installer devolvió el código '+$process.ExitCode+'. Revisa los registros.')}
+                    }
+                }
             }
         }
-        Refresh-Inventory
-    } catch {
-        Write-Audit ('ERROR DESINSTALACION: ' + $name + ' / ' + $_.Exception.Message)
-        [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo desinstalar','OK','Error')
-    } finally {
-        $script:StatusLabel.Text = 'Listo. Revisa el historial y vuelve a escanear para confirmar.'
+        if($refresh){Refresh-Inventory}
+    }catch{
+        Write-Audit ('ERROR AL DESINSTALAR '+$name+': '+$_.Exception.Message)
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo completar la operación','OK','Warning')
+    }finally{
+        if(-not $refresh){$script:StatusLabel.Text='Revisa el asistente de Windows o Steam; actualiza el inventario cuando termine.'}
         Update-Detail
     }
 }
