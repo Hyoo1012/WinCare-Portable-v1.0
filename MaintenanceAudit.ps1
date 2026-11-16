@@ -4,7 +4,7 @@
 # Solo elimina archivos temporales elegibles, bajo selección y confirmación.
 # No borra el registro, Prefetch, Windows Update, Defender, Descargas o perfiles de navegador.
 #requires -Version 5.1
-param([System.Windows.Forms.Form]$Owner, [switch]$SmokeTest, [switch]$SafetyTest)
+param([object]$Owner, [switch]$SmokeTest, [switch]$SafetyTest)
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
