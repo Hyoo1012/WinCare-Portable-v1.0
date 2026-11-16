@@ -1,4 +1,4 @@
-WINCARE PORTABLE v1.3
+WINCARE PORTABLE v1.4
 DISEÑADO POR DEVPODERSEO
 =======================
 
@@ -16,18 +16,27 @@ DISEÑADO POR DEVPODERSEO
    discos, unidades, GPU, red, batería, dispositivos e incidencias.
    Abre msinfo32, dxdiag, Monitor de recursos, Visor de eventos y más.
    El módulo no modifica hardware ni controladores.
-8. Pulsa MANTENIMIENTO para diagnosticar antivirus, Windows Update,
-   inicio de programas, almacenamiento y firewall.
-9. En LIMPIEZA SEGURA pulsa ESCANEAR TEMPORALES; revisa cada archivo,
-   marca lo que quieras quitar y confirma. Solo .tmp/.temp/.cache/.bak/
-   .old antiguos en carpetas Temp. Sin borrado automático.
-10. SFC/DISM son verificaciones opcionales; la Papelera se vacía
-    por separado con doble confirmación.
-11. Exporta informes CSV antes de realizar cambios.
-12. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
+8. Pulsa MANTENIMIENTO para revisar antivirus, Windows Update,
+   aplicaciones de inicio, disco, firewall e integridad.
+9. En LIMPIEZA SEGURA elige UNA categoria: temporales del usuario,
+   temporales Windows, volcados de errores, informes archivados o
+   miniaturas. Escanea antes de borrar y revisa los resultados.
+10. Marca uno o varios archivos o pulsa SELECCIONAR TODOS.
+    Para borrar, marca la casilla HE REVISADO LOS ARCHIVOS y pulsa
+    LIMPIAR SELECCIONADOS. Se pedira confirmacion. Si falta
+    autorizacion, el programa indicara que casilla debes marcar.
+11. El vaciado de Papelera es una accion separada con doble
+    confirmacion; SFC/DISM solo verifican y no reparan.
+12. Exporta informes CSV antes de realizar cambios.
+
+13. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
    con habilitación y confirmación. No hay eliminaciones masivas.
 
 ADVERTENCIAS
+- Los volcados y reportes archivados pueden servir para investigar fallos.
+- La limpieza es POR CATEGORIA, manual, no programada ni automática.
+- El Liberador de espacio de Windows permite gestionar otras categorias
+  oficiales (como archivos de actualizaciones) sin borrarlas manualmente.
 - La limpieza no puede deshacerse de manera garantizada.
 - No se borran Descargas, Documentos, controladores, cachés del navegador,
   Prefetch, Windows Update, Defender ni registro de Windows.
