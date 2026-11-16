@@ -1,4 +1,4 @@
-WINCARE PORTABLE v1.8
+WINCARE PORTABLE v1.9
 DISEÑADO POR DEVPODERSEO
 =======================
 
@@ -28,6 +28,27 @@ DISEÑADO POR DEVPODERSEO
 11. El vaciado de Papelera es una accion separada con doble
     confirmacion; SFC/DISM solo verifican y no reparan.
 12. Exporta informes CSV antes de realizar cambios.
+
+DESINSTALACION DOTA 2 Y OTROS PROGRAMAS v1.9
+1. Pulsa ANALIZAR PC > pestaña PROGRAMAS, busca "Dota 2".
+2. Selecciona el juego; si el registro indica STEAM, marca
+   PERMITIR DESINSTALACION (CON ADVERTENCIA).
+3. Pulsa DESINSTALAR CON STEAM y confirma en WinCare y despues
+   en Steam. El programa nunca borra directamente carpetas.
+4. Si Dota 2 no aparece, pulsa ABRIR STEAM / JUEGOS arriba:
+   Biblioteca > clic derecho Dota 2 > Administrar > Desinstalar.
+5. Otros programas: MSI o asistentes permitidos; si aparece
+   ABRIR EN WINDOWS, completa el proceso en Configuracion.
+6. No permite quitar componentes protegidos ni programas con
+   recomendacion CONSERVAR. No admite desinstalacion masiva.
+
+LIMPIEZA TEMPORAL v1.9
+El boton rojo LIMPIAR SELECCIONADOS esta en la barra SUPERIOR de
+LIMPIEZA SEGURA, al lado de Seleccionar, Desmarcar y autorizacion.
+Escanea > selecciona > marca que revisaste y respaldaste archivos >
+pulsa LIMPIAR SELECCIONADOS > confirma.
+El listado ya no debe ocultar el boton, incluso al redimensionar.
+Solo elimina candidatos validados, NO carpetas completas.
 
 13. RECOMENDACIONES: selecciona un programa en Apps Store o Programas,
     abre el modulo 05 y marca CONSERVAR o OPCIONAL; escribe el motivo,
