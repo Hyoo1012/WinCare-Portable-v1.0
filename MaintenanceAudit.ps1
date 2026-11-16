@@ -764,17 +764,35 @@ if($SafetyTest){
         Find-MCandidates $testRoot 7 'Usuario'
         if($script:MFiles.Count -ne 1){throw ('Falla escaneo: se esperó 1 .tmp y hubo '+$script:MFiles.Count)}
         if($script:MCandidates.Rows.Count -ne 1){throw 'Falla tabla de vista previa.'}
+        # Reproducir el problema reportado: "Seleccionar todos" debe habilitar Limpiar.
+        $script:MScanFinished=$true
+        Mark-MCandidates $true
+        if(-not [bool]$script:MCandidates.Rows[0]['Seleccionar']){throw 'Seleccionar todos no marcó el candidato.'}
+        if(-not $script:MClean.Enabled){throw 'Limpiar seleccionados permanece bloqueado después de seleccionar todos.'}
+        if($script:MConfirm.Checked){throw 'Seleccionar todo no debe autorizar la limpieza automáticamente.'}
+        Mark-MCandidates $false
+        if($script:MClean.Enabled){throw 'Limpiar debe desactivarse al desmarcar todo.'}
+        $script:MScanFinished=$false
+        # Verificación de clases no ejecutables con raíz aislada.
+        $dump=Join-Path $testRoot 'prueba.dmp'
+        [IO.File]::WriteAllText($dump,'dump simulado')
+        $d=Get-Item -LiteralPath $dump
+        $d.LastWriteTimeUtc=[datetime]::UtcNow.AddDays(-65)
+        $d=Get-Item -LiteralPath $dump
+        if(-not (Test-MCandidate $d $testRoot ([datetime]::UtcNow.AddDays(-30)) 'Dumps')){throw 'No admite dmp antiguo en categoría Dumps.'}
+        if(Test-MCandidate $d $testRoot ([datetime]::UtcNow.AddDays(-30)) 'Usuario'){throw 'Permite dmp en categoría incorrecta.'}
+        if(Test-MCandidate $f2 $testRoot ([datetime]::UtcNow.AddDays(-7)) 'Dumps'){throw 'Permite ejecutable en Dumps.'}
         $candidate=@($script:MFiles.Values)[0]
         if(-not (Test-MRevalidate $candidate)){throw 'Falla revalidación de candidato sin cambios.'}
         # Validar las raíces reales de Windows, sin escanear ni eliminar ningún archivo.
         $roots=@(Get-MRoots)
         if($roots.Count -eq 0){throw 'No se detectó ninguna raíz temporal de Windows.'}
         foreach($entry in $roots) {
-            if($null -eq $entry.Root -or $entry.Code -notin @('Usuario','Windows')) {
+            if($null -eq $entry.Root -or $entry.Code -notin @('Usuario','Windows','Dumps','WER','Miniaturas')) {
                 throw 'Raíz temporal devuelta con formato incorrecto.'
             }
         }
-        Write-Host 'OK: selección de raíces, ruta externa bloqueada, .exe excluido, escaneo aislado, vista previa y revalidación. Ninguna limpieza real ejecutada.'
+        Write-Host 'OK: selección de categorías, botón Limpiar habilitado/deshabilitado, .exe excluido, escaneo aislado, vista previa y revalidación. Ninguna limpieza real ejecutada.'
     } finally {
         Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
         $script:MForm.Dispose()
