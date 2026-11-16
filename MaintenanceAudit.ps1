@@ -438,6 +438,31 @@ function Clean-MSelected {
         Update-MCleanEnabled
     }
 }
+function Open-MTechnicianTool([string]$Tool) {
+    # Solo abre aplicaciones firmadas por Windows desde System32.
+    $apps=@{
+        'Liberador de espacio'=@('cleanmgr.exe','')
+        'Monitor de recursos'=@('resmon.exe','')
+        'Visor de eventos'=@('mmc.exe','eventvwr.msc')
+        'Servicios de Windows'=@('mmc.exe','services.msc')
+        'Tareas programadas'=@('mmc.exe','taskschd.msc')
+        'Configuración de inicio'=@('msconfig.exe','')
+    }
+    if(-not $apps.ContainsKey($Tool)){return}
+    if($Tool -in @('Servicios de Windows','Tareas programadas','Configuración de inicio')){
+        $warning='Esta consola permite modificar configuraciones del sistema. WinCare solo la abrirá: cualquier cambio que hagas después será responsabilidad de quien utiliza el equipo. ¿Continuar?'
+        if([Windows.Forms.MessageBox]::Show($warning,$Tool,'YesNo','Warning','Button2') -ne [Windows.Forms.DialogResult]::Yes){return}
+    }
+    try {
+        $exe=Join-Path $env:WINDIR ('System32\'+[string]$apps[$Tool][0])
+        if(-not (Test-Path -LiteralPath $exe -PathType Leaf)){throw ('No se encontró '+$exe)}
+        $argument=[string]$apps[$Tool][1]
+        if($argument){[void](Start-Process -FilePath $exe -ArgumentList $argument -ErrorAction Stop)}
+        else{[void](Start-Process -FilePath $exe -ErrorAction Stop)}
+    }catch{
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'Error al abrir herramienta','OK','Warning')
+    }
+}
 function Empty-MRecycleBin {
     $warning='Esta operación vaciará la Papelera de reciclaje del usuario en los volúmenes accesibles.'+
         [Environment]::NewLine+'No es una limpieza de temporales y no se puede ofrecer aquí una estimación fiable del contenido.'+
@@ -710,10 +735,26 @@ foreach($action in $tools){
     $button.Add_Click($action[3])
     $toolsTab.Controls.Add($button)
 }
+$techTools=@(
+    @('Liberador de espacio',20,195,{ Open-MTechnicianTool 'Liberador de espacio' }),
+    @('Visor de eventos',260,195,{ Open-MTechnicianTool 'Visor de eventos' }),
+    @('Servicios de Windows',500,195,{ Open-MTechnicianTool 'Servicios de Windows' }),
+    @('Tareas programadas',740,195,{ Open-MTechnicianTool 'Tareas programadas' }),
+    @('Monitor de recursos',20,253,{ Open-MTechnicianTool 'Monitor de recursos' }),
+    @('Configuración de inicio',260,253,{ Open-MTechnicianTool 'Configuración de inicio' })
+)
+foreach($entry in $techTools) {
+    $toolButton=New-Object Windows.Forms.Button
+    $toolButton.Text=[string]$entry[0]
+    $toolButton.Location=New-Object Drawing.Point([int]$entry[1],[int]$entry[2])
+    $toolButton.Size=New-Object Drawing.Size(230,42)
+    $toolButton.Add_Click($entry[3])
+    $toolsTab.Controls.Add($toolButton)
+}
 $caution=New-Object Windows.Forms.Label
 $caution.Text='Nunca borrar: registro, Windows Update, WinSxS, Prefetch, Defender, controladores, Descargas, Documentos o perfiles de navegador.'+
     [Environment]::NewLine+'Papelera: requiere doble confirmación y no permite deshacer de forma garantizada. Cierra programas y guarda tus archivos antes de limpiar.'
-$caution.Location=New-Object Drawing.Point(23,215)
+$caution.Location=New-Object Drawing.Point(23,325)
 $caution.Size=New-Object Drawing.Size(1100,82)
 $caution.Anchor='Top,Left,Right'
 $caution.ForeColor=[Drawing.Color]::FromArgb(246,184,92)
