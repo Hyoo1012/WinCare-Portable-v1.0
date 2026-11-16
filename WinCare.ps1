@@ -7,6 +7,8 @@
 #requires -Version 5.1
 param([switch]$SmokeTest)
 
+# Guardar la ruta exacta para reiniciar esta misma copia desde Ventoy o Descargas.
+$script:WinCareScriptPath = $PSCommandPath
 $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'Este programa solamente funciona en Windows.' }
 Add-Type -AssemblyName System.Windows.Forms
@@ -60,6 +62,33 @@ $script:Warnings = New-Object 'System.Collections.Generic.List[string]'
 function Test-Administrator {
     $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Request-AdministratorAccess {
+    # Windows exige un aviso UAC; jamás se eluden los permisos del sistema.
+    if (Test-Administrator) { return $true }
+    if ([string]::IsNullOrWhiteSpace($script:WinCareScriptPath) -or -not (Test-Path -LiteralPath $script:WinCareScriptPath -PathType Leaf)) {
+        [void][System.Windows.Forms.MessageBox]::Show('No se pudo identificar la ruta del script. Abre INICIAR_WINCARE.bat como administrador.','Ruta no disponible','OK','Warning')
+        return $false
+    }
+    try {
+        # -Verb RunAs abre el aviso UAC normal de Windows. Nunca modifica la política
+        # global de PowerShell. No se pasan argumentos editables por el usuario.
+        $powerShellExe = Join-Path $PSHOME 'powershell.exe'
+        $quotedFile = '"' + $script:WinCareScriptPath + '"'
+        $arguments = @('-NoLogo', '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $quotedFile)
+        [void](Start-Process -FilePath $powerShellExe -ArgumentList $arguments -WorkingDirectory $PSScriptRoot -Verb RunAs -PassThru -ErrorAction Stop)
+        Write-Audit 'PERMISOS: solicitud de reinicio elevado aceptada por Windows.'
+        $form.Close()
+        return $true
+    } catch {
+        # Al pulsar No en UAC, el usuario sigue con un inventario parcial, sin fallar.
+        Write-Audit ('PERMISOS: reinicio elevado no autorizado o no disponible. ' + $_.Exception.Message)
+        if ($script:StatusLabel) {
+            $script:StatusLabel.Text = 'Sin permisos elevados: análisis limitado. Pulsa Solicitar permisos cuando quieras.'
+        }
+        return $false
+    }
 }
 
 function Resolve-OutputDirectory {
@@ -250,7 +279,14 @@ function Refresh-Inventory {
         @('Servicios', { Read-ServiceInventory }),
         @('Controladores', { Read-DriverInventory })
     )
+    $hasAdminRights = Test-Administrator
+    $requiresAdmin = @('Provisionadas','Características','Capacidades')
     foreach ($task in $tasks) {
+        if (-not $hasAdminRights -and [string]$task[0] -in $requiresAdmin) {
+            # No lanzar cmdlets DISM que necesariamente darían ERROR_ELEVATION_REQUIRED.
+            # Las pestañas quedan vacías, no con mensajes alarmantes de error.
+            continue
+        }
         $script:StatusLabel.Text = 'Analizando: ' + [string]$task[0] + ' ...'
         [System.Windows.Forms.Application]::DoEvents()
         try { & $task[1] }
@@ -263,6 +299,9 @@ function Refresh-Inventory {
     $total = 0
     foreach ($t in $script:Tables.Values) { $total += $t.Rows.Count }
     $script:StatusLabel.Text = ('{0} elementos detectados. Advertencias: {1}. Modo de cambios: {2}.' -f $total,$script:Warnings.Count,$script:ChangeCheck.Checked)
+    if (-not $hasAdminRights) {
+        $script:StatusLabel.Text += ' Inventario limitado: para completar 3 categorías, pulsa Solicitar permisos.'
+    }
     $script:ScanButton.Enabled = $true
     Update-Search
     Update-Detail
@@ -381,7 +420,8 @@ function Uninstall-Selected {
 
 function Request-RestorePoint {
     if (-not (Test-Administrator)) {
-        [void][System.Windows.Forms.MessageBox]::Show('Para crear un punto de restauración, cierra WinCare y abre el archivo .bat como administrador. No es necesario elevarse para consultar el inventario.','Requiere administrador','OK','Information')
+        [void][System.Windows.Forms.MessageBox]::Show('Se necesita autorización de Windows para crear un punto de restauración. WinCare se reiniciará con privilegios si aceptas el aviso UAC. Después, pulsa nuevamente Punto restauración.','Permiso necesario','OK','Information')
+        [void](Request-AdministratorAccess)
         return
     }
     $response = [System.Windows.Forms.MessageBox]::Show('Se intentará crear un punto de restauración. Windows debe tener Protección del sistema habilitada y normalmente limita la frecuencia a uno por día. No sustituye una copia de seguridad.','Crear punto de restauración','YesNo','Question','Button2')
@@ -451,6 +491,23 @@ $script:ScanButton.ForeColor = [System.Drawing.Color]::White
 $script:ScanButton.FlatStyle = 'Flat'
 $form.Controls.Add($script:ScanButton)
 $script:ScanButton.Add_Click({ Refresh-Inventory })
+
+$script:AdminButton = New-Object System.Windows.Forms.Button
+$script:AdminButton.Text = 'Solicitar permisos'
+$script:AdminButton.Location = New-Object System.Drawing.Point(818, 96)
+$script:AdminButton.Size = New-Object System.Drawing.Size(141, 31)
+$script:AdminButton.FlatStyle = 'Flat'
+$script:AdminButton.BackColor = [System.Drawing.Color]::FromArgb(87, 105, 130)
+$script:AdminButton.ForeColor = [System.Drawing.Color]::White
+$script:AdminButton.Enabled = -not (Test-Administrator)
+if (-not $script:AdminButton.Enabled) {
+    $script:AdminButton.Text = 'Admin activo'
+    $script:AdminButton.BackColor = [System.Drawing.Color]::FromArgb(45, 109, 82)
+}
+$form.Controls.Add($script:AdminButton)
+$script:AdminButton.Add_Click({
+    [void](Request-AdministratorAccess)
+})
 
 $networkBtn = New-Object System.Windows.Forms.Button
 $networkBtn.Text = 'Seguridad de red e IP'
@@ -618,6 +675,8 @@ WinCare Portable v1.1 - Diseñado por DevPoderSEO
 - Una conexión o IP desconocida NO confirma intrusión. Contrasta con router, antivirus y registros.
 - No se bloquean conexiones, no se matan procesos ni se realiza escaneo masivo de equipos.
 - El ping manual y la IP pública externa requieren consentimiento.
+- Para consultar categorías restringidas, pulsa Solicitar permisos y autoriza el aviso UAC de Windows.
+- Si rechazas UAC, el inventario continúa limitado y nunca cambia la seguridad de Windows.
 
 Consulta el README incluido para obtener instrucciones.
 '@
@@ -634,6 +693,17 @@ $form.Controls.Add($script:StatusLabel)
 
 $form.Add_Shown({
     [System.Windows.Forms.Application]::DoEvents()
+    if (-not (Test-Administrator)) {
+        $message = 'Para consultar todas las aplicaciones aprovisionadas, características y capacidades de Windows, se necesitan permisos de administrador.' +
+            [Environment]::NewLine + [Environment]::NewLine +
+            '¿Quieres reiniciar WinCare con permisos? Windows te pedirá autorización (UAC).' +
+            [Environment]::NewLine + [Environment]::NewLine +
+            'Si eliges No, puedes continuar con el análisis parcial. La desinstalación seguirá desactivada.'
+        $choice = [System.Windows.Forms.MessageBox]::Show($message,'WinCare | Permisos para inventario completo','YesNo','Question','Button2')
+        if ($choice -eq [System.Windows.Forms.DialogResult]::Yes) {
+            if (Request-AdministratorAccess) { return }
+        }
+    }
     Refresh-Inventory
 })
 if ($SmokeTest) {
@@ -652,7 +722,10 @@ if ($SmokeTest) {
             }
         }
     }
-    Write-Host 'OK: Inicialización de 7 tablas WinCare y columnas protegidas.'
+    if (-not $script:AdminButton -or $script:AdminButton.Text -notin @('Admin activo','Solicitar permisos')) {
+        throw 'Botón de elevación UAC no inicializado.'
+    }
+    Write-Host 'OK: Inicialización de 7 tablas WinCare, columnas protegidas y control UAC.'
     $form.Dispose()
     return
 }
