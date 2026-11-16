@@ -352,10 +352,11 @@ $script:TGrid.DefaultCellStyle.BackColor=$script:TColors.Surface
 $script:TGrid.DefaultCellStyle.ForeColor=$script:TColors.Text
 $script:TGrid.DefaultCellStyle.SelectionBackColor=[Drawing.Color]::FromArgb(39,108,173)
 $script:TGrid.DefaultCellStyle.SelectionForeColor=[Drawing.Color]::White
+$columnWeights=@{'Área'=80;'Componente'=155;'Dato'=210;'Estado'=80;'Observación'=265}
 foreach($name in @('Área','Componente','Dato','Estado','Observación')){
     $col=New-Object Windows.Forms.DataGridViewTextBoxColumn
     $col.Name=$name;$col.DataPropertyName=$name;$col.HeaderText=$name
-    $col.FillWeight=[single](switch($name){'Área' {80};'Componente' {155};'Dato' {210};'Estado' {80};'Observación' {265}})
+    $col.FillWeight=[single]$columnWeights[$name]
     [void]$script:TGrid.Columns.Add($col)
 }
 $script:TGrid.DataSource=$script:TRows.DefaultView
