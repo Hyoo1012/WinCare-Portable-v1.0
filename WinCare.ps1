@@ -608,7 +608,7 @@ function Request-RestorePoint {
 
 # ---- Interfaz portátil WinForms ----
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'WinCare Portable v1.8 | Soporte PC, Redes y CCTV | DevPoderSEO'
+$form.Text = 'WinCare Portable v1.9 | Soporte PC, Redes y CCTV | DevPoderSEO'
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
 $form.Size = New-Object System.Drawing.Size(1340, 885)
 $form.MinimumSize = New-Object System.Drawing.Size(1185, 790)
@@ -1040,6 +1040,7 @@ $quickTips.SetToolTip($supportBtn,'Impresoras, eventos críticos, aplicaciones d
 $quickTips.SetToolTip($cctvBtn,'Catálogo seguro de cámaras IP y NVR, mapa lógico, comprobación autorizada de un equipo y reportes.')
 $quickTips.SetToolTip($script:SearchBox,'Buscar aplicaciones, fabricantes, riesgos y recomendaciones.')
 $quickTips.SetToolTip($script:ChangeCheck,'Activa para quitar juegos de Steam, MSI, apps Store y desinstaladores interactivos. Abrir Configuración de Windows no lo requiere.')
+$quickTips.SetToolTip($script:RemoveButton,'Selecciona una aplicación. Para Steam y MSI marca Permitir desinstalación; si el método es Windows abre su lista oficial.')
 $quickTips.SetToolTip($steamBtn,'Abre el cliente Steam cuando un juego, por ejemplo Dota 2, no esté registrado en la lista de Windows.')
 
 # Acciones secundarias de inventario en un pie flexible y separado de los módulos.
@@ -1088,12 +1089,12 @@ $form.Controls.SetChildIndex($headerBar,0)
 
 $detailPanel=New-Object System.Windows.Forms.Panel
 $detailPanel.Location=New-Object Drawing.Point(20,699)
-$detailPanel.Size=New-Object Drawing.Size(1260,44)
+$detailPanel.Size=New-Object Drawing.Size(1260,52)
 $detailPanel.Anchor='Bottom,Left,Right'
 $detailPanel.BackColor=$script:Palette.Panel
 $form.Controls.Remove($script:DetailLabel)
-$script:DetailLabel.Location=New-Object Drawing.Point(11,4)
-$script:DetailLabel.Size=New-Object Drawing.Size(1230,39)
+$script:DetailLabel.Location=New-Object Drawing.Point(11,2)
+$script:DetailLabel.Size=New-Object Drawing.Size(1230,47)
 $script:DetailLabel.Anchor='Top,Left,Right'
 $detailPanel.Controls.Add($script:DetailLabel)
 $form.Controls.Add($detailPanel)
