@@ -235,7 +235,7 @@ if($SmokeTest){
  $script:HForm.Dispose()
  return
 }
-$script:HForm.Add_Shown({Read-HChecks})
+$script:HForm.Add_Shown({$script:HStatus.Text='Listo. Pulsa Verificar de nuevo para comenzar el análisis local.'})
 try{
  if($Owner -is [Windows.Forms.IWin32Window]){[void]$script:HForm.ShowDialog($Owner)}
  else{[void]$script:HForm.ShowDialog()}
