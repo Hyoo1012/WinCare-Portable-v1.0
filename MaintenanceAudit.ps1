@@ -382,7 +382,13 @@ function Test-MRevalidate($Candidate) {
     } catch{return $false}
 }
 function Clean-MSelected {
-    if(-not $script:MConfirm.Checked -or -not $script:MScanFinished){return}
+    if(-not $script:MScanFinished){return}
+    if($script:MGrid.IsCurrentCellDirty){[void]$script:MGrid.CommitEdit([Windows.Forms.DataGridViewDataErrorContexts]::Commit)}
+    [void]$script:MGrid.EndEdit()
+    if(-not $script:MConfirm.Checked){
+        [void][Windows.Forms.MessageBox]::Show('Debes marcar «He revisado los archivos» antes de limpiar. Tus archivos seleccionados se conservarán.','Falta autorización de limpieza','OK','Information')
+        return
+    }
     $chosen=New-Object System.Collections.Generic.List[object]
     foreach($row in $script:MCandidates.Rows) {
         if(-not [bool]$row['Seleccionar']){continue}
@@ -391,15 +397,15 @@ function Clean-MSelected {
     }
     if($chosen.Count -eq 0){return}
     $size=[double]0;$systemFiles=0
-    foreach($item in $chosen){$size+=[double]$item.Size;if($item.Code -eq 'Windows'){$systemFiles++}}
+    foreach($item in $chosen){$size+=[double]$item.Size;if($item.Code -in @('Windows','WER')){$systemFiles++}}
     $text='Has seleccionado '+$chosen.Count+' archivos temporales, estimados en '+(Format-MSize $size)+'.'+[Environment]::NewLine+
-        'Se eliminarán únicamente estos candidatos (.tmp/.temp/.cache/.bak/.old) antiguos. No se podrán restaurar de forma garantizada.'+
+        'Se eliminarán solo los archivos seleccionados de esta categoría. Algunos pueden contener evidencia de fallos o cachés que Windows deba reconstruir. No se podrán recuperar de manera garantizada.'+
         [Environment]::NewLine+'Windows y las aplicaciones podrían necesitar reconstruir alguno. Los que cambiaron o están en uso se omitirán.'+
         [Environment]::NewLine+[Environment]::NewLine+'No se tocarán Descargas, documentos, navegador, registro, Defender ni Windows Update.'+
         [Environment]::NewLine+[Environment]::NewLine+'¿Confirmas esta limpieza?'
     if([Windows.Forms.MessageBox]::Show($text,'Confirmar eliminación irreversible','YesNo','Warning','Button2') -ne [Windows.Forms.DialogResult]::Yes){return}
     if($systemFiles -gt 0) {
-        $warning='Incluiste '+$systemFiles+' archivos en Windows\Temp. Es una carpeta compartida con procesos y servicios.'+
+        $warning='Incluiste '+$systemFiles+' archivos de una carpeta de Windows o informes de errores archivados. Son datos potencialmente útiles para diagnósticos.'+
            [Environment]::NewLine+'Se aplicará la misma validación de antigüedad, extensión y cambios desde la vista previa.'+
            [Environment]::NewLine+'¿Confirmas explícitamente la limpieza de esos archivos de Windows?'
         if([Windows.Forms.MessageBox]::Show($warning,'Confirmación adicional: archivos de Windows','YesNo','Warning','Button2') -ne [Windows.Forms.DialogResult]::Yes){return}
@@ -429,6 +435,7 @@ function Clean-MSelected {
         $script:MFiles.Clear()
         $script:MScan.Enabled=$true
         $script:MClean.Enabled=$false
+        Update-MCleanEnabled
     }
 }
 function Empty-MRecycleBin {
