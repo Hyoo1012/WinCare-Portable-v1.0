@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v1.5
+﻿# WinCare Portable - v1.6
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -784,7 +784,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.5 - Diseñado por DevPoderSEO
+WinCare Portable v1.6 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Solo permite quitar Appx expresamente aprobadas y MSI verificados.
@@ -801,6 +801,8 @@ WinCare Portable v1.5 - Diseñado por DevPoderSEO
 - No se eliminan Prefetch, Descargas, perfiles de navegador ni cachés críticas.
 - Papelera opcional: doble confirmación, sin restauración garantizada.
 - Accesos técnicos: Liberador de espacio, Servicios, Tareas programadas, Visor de eventos, msconfig y Monitor de recursos.
+- Red v1.6: diagnóstico inteligente IP/DHCP/DNS/gateway, Wi-Fi, mapa lógico LAN y puertos autorizados.
+- Las pruebas de red activas exigen consentimiento y solo sondeo de 16 IP privadas locales como máximo.
 - Hardware y salud consulta CPU, RAM, placa madre, BIOS, discos, GPU, red, batería y dispositivos.
 - Incluye msinfo32, dxdiag, Monitor de recursos y otras herramientas de Windows.
 - Salud de disco/SMART y eventos son orientativos; no reemplazan diagnóstico del fabricante.
@@ -915,7 +917,7 @@ for($n=0;$n -lt $navButtons.Count;$n++){
 $form.Controls.Add($navBar)
 $quickTips=New-Object System.Windows.Forms.ToolTip
 $quickTips.SetToolTip($hardwareBtn,'CPU, RAM, BIOS, discos, dispositivos y salud del equipo.')
-$quickTips.SetToolTip($networkBtn,'Conexiones TCP/UDP, procesos, IP y equipos observados.')
+$quickTips.SetToolTip($networkBtn,'Conexiones, IP, DNS, DHCP, gateway, Wi-Fi, descubrimiento LAN limitado e informe técnico de red.')
 $quickTips.SetToolTip($maintenanceBtn,'Limpieza controlada, integridad, inicio y actualizaciones.')
 $quickTips.SetToolTip($technicianBtn,'Informe HTML para clientes, respaldo de controladores y reparación guiada.')
 $quickTips.SetToolTip($policyBtn,'Clasificar programas como Conservar u Opcional sin desbloquear componentes del sistema.')
