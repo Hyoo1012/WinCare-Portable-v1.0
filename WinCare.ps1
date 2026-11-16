@@ -379,7 +379,14 @@ function Refresh-Inventory {
     } catch { }
     $total = 0
     foreach ($t in $script:Tables.Values) { $total += $t.Rows.Count }
-    $script:StatusLabel.Text = ('{0} elementos detectados. Advertencias: {1}. Modo de cambios: {2}.' -f $total,$script:Warnings.Count,$script:ChangeCheck.Checked)
+    $keep=0;$optional=0
+    foreach($table in @($script:Tables['Apps Store'],$script:Tables['Programas'])){
+        foreach($row in $table.Rows){
+            if([string]$row['Recomendación'] -like 'Conservar*'){$keep++}
+            elseif([string]$row['Recomendación'] -like 'Opcional*'){$optional++}
+        }
+    }
+    $script:StatusLabel.Text = ('{0} elementos | Conservar: {1} | Opcionales: {2} | Advertencias: {3} | Desinstalación: {4}' -f $total,$keep,$optional,$script:Warnings.Count,$script:ChangeCheck.Checked)
     if (-not $hasAdminRights) {
         $script:StatusLabel.Text += ' Inventario limitado: para completar 3 categorías, pulsa Solicitar permisos.'
     }
@@ -685,11 +692,34 @@ foreach ($name in $script:Categories) {
     }
     $grid.DataSource = $script:Tables[$name].DefaultView
     $grid.Add_SelectionChanged({ Update-Detail })
+    $grid.Add_CellFormatting({
+        param($sender,$eventArgs)
+        if($eventArgs.RowIndex -lt 0 -or $eventArgs.ColumnIndex -lt 0){return}
+        $columnName=[string]$sender.Columns[$eventArgs.ColumnIndex].Name
+        if($columnName -notin @('Riesgo','Recomendación')){return}
+        $value=[string]$eventArgs.Value
+        if($value -match '^(Protegido|Conservar|Error)'){
+            $eventArgs.CellStyle.ForeColor=[Drawing.Color]::FromArgb(131,222,184)
+        } elseif($value -match '^(Opcional|Bajo)'){
+            $eventArgs.CellStyle.ForeColor=[Drawing.Color]::FromArgb(113,191,252)
+        } elseif($value -match '^(Revisar|Medio)'){
+            $eventArgs.CellStyle.ForeColor=[Drawing.Color]::FromArgb(250,201,122)
+        } else {
+            $eventArgs.CellStyle.ForeColor=$script:Palette.Text
+        }
+    })
     $page.Controls.Add($grid)
     $script:Grids[$name] = $grid
     [void]$script:TabControl.TabPages.Add($page)
 }
 $script:TabControl.Add_SelectedIndexChanged({ Update-Search; Update-Detail })
+$legendLabel=New-Object System.Windows.Forms.Label
+$legendLabel.Text='Guía visual:  Conservar = protegido  |  Opcional = evaluar  |  Revisar = requiere criterio técnico'
+$legendLabel.Location=New-Object Drawing.Point(23,218)
+$legendLabel.Size=New-Object Drawing.Size(1120,17)
+$legendLabel.ForeColor=$script:Palette.Muted
+$form.Controls.Add($legendLabel)
+
 
 $script:DetailLabel = New-Object System.Windows.Forms.Label
 $script:DetailLabel.Location = New-Object System.Drawing.Point(23, 694)
