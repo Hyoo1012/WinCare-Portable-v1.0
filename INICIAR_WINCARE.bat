@@ -1,6 +1,6 @@
 @echo off
 REM WinCare Portable - Diseñado por DevPoderSEO
-REM Herramienta local para Windows; hardware y red en modo solo lectura.
+REM Herramienta local para Windows - DevPoderSEO. Limpieza solo con consentimiento.
 setlocal
 cd /d "%~dp0"
 if not exist "%~dp0WinCare.ps1" (
@@ -13,6 +13,9 @@ if not exist "%~dp0NetworkAudit.ps1" (
 )
 if not exist "%~dp0HardwareAudit.ps1" (
   echo ADVERTENCIA: falta HardwareAudit.ps1. Hardware y salud no estara disponible.
+)
+if not exist "%~dp0MaintenanceAudit.ps1" (
+  echo ADVERTENCIA: falta MaintenanceAudit.ps1. Mantenimiento no estara disponible.
 )
 "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File "%~dp0WinCare.ps1"
 if errorlevel 1 pause
