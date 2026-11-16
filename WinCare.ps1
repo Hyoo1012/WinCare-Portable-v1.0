@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v1.3
+﻿# WinCare Portable - v1.4
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -665,7 +665,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.3 - Diseñado por DevPoderSEO
+WinCare Portable v1.4 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Solo permite quitar Appx expresamente aprobadas y MSI verificados.
@@ -677,9 +677,11 @@ WinCare Portable v1.3 - Diseñado por DevPoderSEO
 - Si se ha usado Ejecutar como otro usuario, Appx se detecta para ese usuario.
 - El inventario puede ser parcial sin permisos elevados y no detecta todos los programas portátiles.
 - Centro de mantenimiento: antivirus, Windows Update, inicio, almacenamiento, firewall e integridad.
-- La limpieza solo permite temporales antiguos con extensiones aprobadas, vista previa y confirmación; no borra carpetas.
+- Limpieza por categoría: temporales de usuario, Windows, volcados, informes de fallos y miniaturas.
+- La limpieza requiere selección, autorización y confirmación. No borra carpetas ni archivos del usuario.
 - No se eliminan Prefetch, Descargas, perfiles de navegador ni cachés críticas.
 - Papelera opcional: doble confirmación, sin restauración garantizada.
+- Accesos técnicos: Liberador de espacio, Servicios, Tareas programadas, Visor de eventos, msconfig y Monitor de recursos.
 - Hardware y salud consulta CPU, RAM, placa madre, BIOS, discos, GPU, red, batería y dispositivos.
 - Incluye msinfo32, dxdiag, Monitor de recursos y otras herramientas de Windows.
 - Salud de disco/SMART y eventos son orientativos; no reemplazan diagnóstico del fabricante.
