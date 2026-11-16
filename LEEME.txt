@@ -1,8 +1,12 @@
-WINCARE PORTABLE v1.9
+WINCARE PORTABLE v2.0
 DISEÑADO POR DEVPODERSEO
 =======================
 
-1. Descarga todos los archivos desde GitHub (Code > Download ZIP).
+1. VERSION RECOMENDADA: abre GitHub > Actions > Validar PowerShell.
+   Descarga el artefacto WinCarePortable-v2.0-USB de la ejecucion
+   verde mas reciente. Dentro viene WinCarePortable-v2.0.zip.
+   Extrae la carpeta WinCarePortable del segundo ZIP en Ventoy.
+   Tambien puedes bajar Code > Download ZIP, pero lleva pruebas y fuentes.
 2. Descomprime en Ventoy:\Herramientas\WinCarePortable\
 3. Inicia Windows normalmente y ejecuta INICIAR_WINCARE.bat.
 4. Si WinCare pide permisos elevados, autoriza el aviso UAC para
@@ -29,7 +33,21 @@ DISEÑADO POR DEVPODERSEO
     confirmacion; SFC/DISM solo verifican y no reparan.
 12. Exporta informes CSV antes de realizar cambios.
 
-DESINSTALACION DOTA 2 Y OTROS PROGRAMAS v1.9
+NUEVO EN WINCARE 2.0
+- Boton 08 VERIFICAR WINCARE: comprueba que todos los archivos
+  esten presentes, permisos Windows, carpeta de reportes y reglas.
+  Si el ZIP incluye SHA256SUMS.txt, compara su integridad.
+- Steam: identifica juegos tambien desde appmanifest locales
+  de bibliotecas Steam (incluso en otras unidades).
+  No borra carpetas: abre Steam, que solicita confirmacion.
+- El ZIP de Actions incluye VERSION.txt y SHA256SUMS.txt.
+  Se excluyen configuraciones personales y reportes de clientes.
+- Para actualizar, RESPALDA tus carpetas Configuracion y Reportes.
+  Prueba la nueva version en OTRA carpeta antes de reemplazar.
+- Una prueba de instalacion correcta NO garantiza hardware,
+  redes, impresoras o desinstalaciones reales probadas.
+
+DESINSTALACION DOTA 2 Y OTROS PROGRAMAS v2.0
 1. Pulsa ANALIZAR PC > pestaña PROGRAMAS, busca "Dota 2".
 2. Selecciona el juego; si el registro indica STEAM, marca
    PERMITIR DESINSTALACION (CON ADVERTENCIA).
