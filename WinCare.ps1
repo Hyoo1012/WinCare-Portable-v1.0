@@ -1,4 +1,6 @@
-# WinCare Portable - v1.0
+﻿# WinCare Portable - v1.1
+# Diseñado por DevPoderSEO
+# Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
 # Uso: inventario, auditoria y desinstalacion selectiva conservadora.
 # Nunca deshabilita Windows Update, Defender, servicios ni controladores.
@@ -295,7 +297,7 @@ function Export-Inventory {
                 $records | Export-Csv -LiteralPath (Join-Path $folder $filename) -NoTypeInformation -Encoding UTF8
             }
         }
-        ('WinCare Portable v1.0' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
+        ('WinCare Portable v1.1 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
         Write-Audit ('EXPORTACION: ' + $folder)
         [void][System.Windows.Forms.MessageBox]::Show(('Inventario exportado en:' + [Environment]::NewLine + $folder),'Exportación completada','OK','Information')
         Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $folder + '"')
@@ -397,7 +399,7 @@ function Request-RestorePoint {
 
 # ---- Interfaz portátil WinForms ----
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'WinCare Portable | Diagnóstico y limpieza segura'
+$form.Text = 'WinCare Portable | Diagnóstico, limpieza y seguridad de red | DevPoderSEO'
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
 $form.Size = New-Object System.Drawing.Size(1260, 780)
 $form.MinimumSize = New-Object System.Drawing.Size(1130, 700)
@@ -412,6 +414,15 @@ $header.Text = 'WinCare Portable'
 $header.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 18, [System.Drawing.FontStyle]::Bold)
 $header.ForeColor = $script:Palette.Text
 $form.Controls.Add($header)
+
+$brandLabel = New-Object System.Windows.Forms.Label
+$brandLabel.Text = 'Diseñado por DevPoderSEO'
+$brandLabel.Location = New-Object System.Drawing.Point(913, 19)
+$brandLabel.Size = New-Object System.Drawing.Size(285, 27)
+$brandLabel.Anchor = 'Top,Right'
+$brandLabel.TextAlign = 'MiddleRight'
+$brandLabel.ForeColor = $script:Palette.Accent
+$form.Controls.Add($brandLabel)
 
 $script:SubtitleLabel = New-Object System.Windows.Forms.Label
 $script:SubtitleLabel.Location = New-Object System.Drawing.Point(22, 55)
@@ -439,6 +450,27 @@ $script:ScanButton.ForeColor = [System.Drawing.Color]::White
 $script:ScanButton.FlatStyle = 'Flat'
 $form.Controls.Add($script:ScanButton)
 $script:ScanButton.Add_Click({ Refresh-Inventory })
+
+$networkBtn = New-Object System.Windows.Forms.Button
+$networkBtn.Text = 'Seguridad de red e IP'
+$networkBtn.Location = New-Object System.Drawing.Point(968, 96)
+$networkBtn.Size = New-Object System.Drawing.Size(220, 31)
+$networkBtn.BackColor = $script:Palette.Accent
+$networkBtn.ForeColor = [System.Drawing.Color]::White
+$networkBtn.FlatStyle = 'Flat'
+$form.Controls.Add($networkBtn)
+$networkBtn.Add_Click({
+    $module = Join-Path $PSScriptRoot 'NetworkAudit.ps1'
+    if (-not (Test-Path -LiteralPath $module -PathType Leaf)) {
+        [void][System.Windows.Forms.MessageBox]::Show('Falta NetworkAudit.ps1. Descarga todos los archivos del repositorio juntos.','Módulo no encontrado','OK','Warning')
+        return
+    }
+    try { & $module -Owner $form }
+    catch {
+        Write-Audit ('ERROR RED: ' + $_.Exception.Message)
+        [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir seguridad de red','OK','Error')
+    }
+})
 
 $script:ChangeCheck = New-Object System.Windows.Forms.CheckBox
 $script:ChangeCheck.Text = 'Habilitar desinstalación (precaución)'
@@ -558,7 +590,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.0
+WinCare Portable v1.1 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Solo permite quitar Appx expresamente aprobadas y MSI verificados.
@@ -569,6 +601,10 @@ WinCare Portable v1.0
 - No elimina aplicaciones de otros usuarios ni aprovisionadas para cuentas nuevas.
 - Si se ha usado Ejecutar como otro usuario, Appx se detecta para ese usuario.
 - El inventario puede ser parcial sin permisos elevados y no detecta todos los programas portátiles.
+- Seguridad de red e IP consulta conexiones TCP/UDP, procesos, dispositivos en caché ARP/ND y firewall.
+- Una conexión o IP desconocida NO confirma intrusión. Contrasta con router, antivirus y registros.
+- No se bloquean conexiones, no se matan procesos ni se realiza escaneo masivo de equipos.
+- El ping manual y la IP pública externa requieren consentimiento.
 
 Consulta el README incluido para obtener instrucciones.
 '@
