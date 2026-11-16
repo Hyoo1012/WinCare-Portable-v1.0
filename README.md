@@ -1,4 +1,4 @@
-# WinCare Portable v1.2
+# WinCare Portable v1.3
 
 **Diseñado por DevPoderSEO**
 
@@ -11,7 +11,7 @@ Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar 
 1. En este repositorio selecciona **Code → Download ZIP**.
 2. Descomprime todos los archivos en una misma carpeta, por ejemplo `Ventoy:\Herramientas\WinCarePortable\`.
 3. Arranca Windows normalmente y ejecuta `INICIAR_WINCARE.bat`.
-4. En la ventana principal pulsa **Analizar PC**, **Seguridad de red e IP** o **Hardware y salud** para abrir el módulo deseado.
+4. En la ventana principal pulsa **Analizar PC**, **Seguridad de red e IP** o **Hardware y salud** o **Mantenimiento** para abrir el módulo deseado.
 
 ### Permisos de administrador (UAC)
 
@@ -32,6 +32,7 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | `WinCare.ps1` | Inventario del sistema e interfaz principal |
 | `NetworkAudit.ps1` | Diagnóstico de conexiones y seguridad de red (solo lectura) |
 | `HardwareAudit.ps1` | Inventario de componentes, estado de discos, dispositivos y accesos a herramientas de Windows (solo lectura) |
+| `MaintenanceAudit.ps1` | Diagnóstico preventivo, limpieza selectiva de temporales y verificaciones opcionales |
 | `INICIAR_WINCARE.bat` | Iniciador local |
 | `LEEME.txt` | Guía rápida |
 | `Red-Confiables.json` | Se genera al registrar equipos de confianza en la misma carpeta o en Reportes |
@@ -83,6 +84,42 @@ En **Hardware y salud**, elige la herramienta en el selector y pulsa **Abrir her
 **Precaución:** WinCare únicamente abre estas herramientas. Algunas permiten cambios importantes por cuenta propia; administrar particiones sin un respaldo puede causar pérdida de datos.
 
 Pulsa **Exportar informe** para guardar los hallazgos en CSV por categoría, dentro de `Reportes/hardware-AAAAMMDD-HHMMSS/` (o Documentos si el USB es de solo lectura). Los reportes pueden incluir nombres del equipo, adaptadores y otros datos técnicos: revísalos antes de compartir.
+
+## Centro de mantenimiento y limpieza segura (v1.3)
+
+En la ventana principal pulsa **Mantenimiento**. El módulo es portátil y separa tres pestañas:
+
+### Diagnóstico preventivo
+
+Inspección del antivirus/Defender, registro informativo de productos de seguridad, estado del servicio Windows Update, último hotfix registrado, espacio libre de unidades, aplicaciones de inicio, firewall y versión de Windows. Los resultados se clasifican como **Correcto**, **Revisar**, **Información** y **No verificadas**. Son indicadores orientativos: una entrada de inicio o servicio detenido no prueba malware ni fallos. La herramienta no comprueba automáticamente actualizaciones pendientes.
+
+### Limpieza segura
+
+Solo busca archivos con las extensiones **.tmp, .temp, .cache, .bak y .old** dentro de **LOCALAPPDATA\Temp** (más de 7 días) y **Windows\Temp** (más de 14 días; requiere administrador). El escaneo no elimina nada, y muestra ruta, tamaño y fecha de cada candidato.
+
+- El usuario selecciona los archivos y marca la confirmación de respaldo.
+- Exige confirmación final; si se incluye Windows\Temp, pide una confirmación adicional.
+- Verifica nuevamente la ubicación autorizada, antigüedad, extensión, tamaño y fechas antes de borrar.
+- Excluye rutas externas, reparse points, junctions y enlaces simbólicos; ignora archivos bloqueados o cambiados desde la vista previa.
+- No elimina carpetas con recursión y no borra archivos ajenos a las extensiones aprobadas.
+- Omite rutas de navegadores, ejecutables, registros del sistema y archivos importantes.
+- La exploración está limitada a **30.000 entradas por carpeta** y profundidad 12; informa si se alcanza el límite.
+- Muestra archivos eliminados, omitidos y errores. **La eliminación no se puede revertir de forma garantizada.**
+
+El resultado ocupa solamente parte del almacenamiento temporal: no elimina datos personales ni intenta limpiar todo Windows indiscriminadamente. Cierra las aplicaciones antes de limpiar y conserva respaldos.
+
+### Herramientas de mantenimiento
+
+Accesos oficiales a Windows Update, Aplicaciones de inicio, Sensor de almacenamiento, Seguridad de Windows y carpetas de reportes.
+
+- **SFC /verifyonly** y **DISM /Online /Cleanup-Image /ScanHealth** se ejecutan manualmente tras confirmación, en una consola aparte con solicitud UAC. Son verificaciones, no reparaciones.
+- **Vaciar Papelera** es opcional y está separado de la limpieza temporal. Exige doble confirmación explícita. El programa no estima previamente el contenido ni puede garantizar su recuperación.
+
+**Nunca borra:** Descargas, Documentos, archivos personales, Prefetch, WinSxS, caché de Windows Update, Defender, DriverStore, perfiles de navegador, drivers, servicios, registro o componentes protegidos. No existe limpieza automática o programada.
+
+Los resultados se exportan a CSV en Reportes/mantenimiento-AAAAMMDD-HHMMSS. Los registros de auditoría se guardan localmente en auditoria.txt o auditoria-mantenimiento.txt. Los informes pueden contener datos técnicos privados del equipo.
+
+**Limitaciones:** cierto inventario y Windows\Temp requieren permisos elevados. La limpieza no reemplaza un respaldo y no detecta todos los problemas del computador. Las pruebas automatizadas verifican sintaxis, construcción de interfaz y exclusión de rutas/extensiones, no borrados reales de producción. Comprueba la operación en un equipo de prueba antes de utilizarla en equipos importantes.
 
 ## Seguridad de red e IP
 
