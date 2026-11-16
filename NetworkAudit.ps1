@@ -416,10 +416,31 @@ $script:NDiagnosticButton.Add_Click({
     }
 })
 
+$advancedBtn=New-Object Windows.Forms.Button
+$advancedBtn.Text='Centro avanzado de redes (v2.1)'
+$advancedBtn.Location=New-Object Drawing.Point(330,141)
+$advancedBtn.Size=New-Object Drawing.Size(300,33)
+$advancedBtn.BackColor=[Drawing.Color]::FromArgb(35,114,180)
+$advancedBtn.ForeColor=[Drawing.Color]::White
+$advancedBtn.FlatStyle='Flat'
+$script:NForm.Controls.Add($advancedBtn)
+$advancedBtn.Add_Click({
+    $path=Join-Path $PSScriptRoot 'AdvancedNetwork.ps1'
+    $core=Join-Path $PSScriptRoot 'AdvancedNetworkCore.ps1'
+    if(-not (Test-Path -LiteralPath $path -PathType Leaf) -or -not (Test-Path -LiteralPath $core -PathType Leaf)){
+        [void][Windows.Forms.MessageBox]::Show('Faltan archivos del centro avanzado. Descarga WinCare completo desde GitHub.','Módulo no disponible','OK','Warning')
+        return
+    }
+    try{& $path -Owner $script:NForm}
+    catch{
+        Write-Audit ('CENTRO AVANZADO RED: '+$_.Exception.Message)
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'Redes avanzadas no disponible','OK','Error')
+    }
+})
 $diagNote=New-Object Windows.Forms.Label
-$diagNote.Text='IP · DHCP · DNS · gateway · Internet · Wi-Fi · mapa LAN · puertos · informes'
-$diagNote.Location=New-Object Drawing.Point(330,148)
-$diagNote.Size=New-Object Drawing.Size(870,25)
+$diagNote.Text='Análisis por demanda · topología lógica · métricas'
+$diagNote.Location=New-Object Drawing.Point(643,148)
+$diagNote.Size=New-Object Drawing.Size(540,25)
 $diagNote.ForeColor=$script:NColors.Muted
 $script:NForm.Controls.Add($diagNote)
 foreach ($kind in $script:NCategories) {
@@ -481,7 +502,7 @@ if ($SmokeTest) {
             if ($null -eq $grid.Columns[[string]$dataColumn.ColumnName]) { throw ('Columna ausente en ' + $category) }
         }
     }
-    if($script:NDiagnosticButton.Text -ne 'Abrir diagnóstico inteligente (v1.6)'){throw 'Falta acceso al nuevo diagnóstico.'}
+    if($script:NDiagnosticButton.Text -ne 'Abrir diagnóstico inteligente (v1.6)' -or $advancedBtn.Text -ne 'Centro avanzado de redes (v2.1)'){throw 'Faltan accesos a diagnóstico de redes.'}
     if($script:NRefresh.Text -ne 'Analizar pestaña'){throw 'Falta análisis de red bajo demanda.'}
     Write-Host 'OK: inventarios de red a demanda y acceso a diagnóstico; sin tráfico automático.'
     $script:NForm.Dispose()
