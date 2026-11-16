@@ -17,6 +17,17 @@ if not exist "%~dp0HardwareAudit.ps1" (
 if not exist "%~dp0MaintenanceAudit.ps1" (
   echo ADVERTENCIA: falta MaintenanceAudit.ps1. Mantenimiento no estara disponible.
 )
+if not exist "%~dp0AppRules.ps1" (
+  echo ERROR: falta AppRules.ps1. La proteccion de aplicaciones requiere el proyecto completo.
+  pause
+  exit /b 1
+)
+if not exist "%~dp0AppRecommendations.ps1" (
+  echo ADVERTENCIA: falta AppRecommendations.ps1. No se podran editar recomendaciones.
+)
+if not exist "%~dp0TechToolkit.ps1" (
+  echo ADVERTENCIA: falta TechToolkit.ps1. El taller tecnico no estara disponible.
+)
 "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File "%~dp0WinCare.ps1"
 if errorlevel 1 pause
 endlocal
