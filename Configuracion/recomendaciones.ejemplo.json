@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Actualizado": "Ejemplo (no activo)",
+  "Reglas": [
+    {
+      "Tipo": "Win32",
+      "Nombre": "Software de facturación de ejemplo",
+      "Fabricante": "Proveedor de ejemplo",
+      "Recomendacion": "Conservar",
+      "Motivo": "Necesario para el trabajo del cliente; verificar antes de modificar."
+    },
+    {
+      "Tipo": "Appx",
+      "Nombre": "Clipchamp.Clipchamp",
+      "Fabricante": "",
+      "Recomendacion": "Opcional",
+      "Motivo": "Solo si el cliente no lo utiliza; no es una orden automática de desinstalación."
+    }
+  ]
+}
