@@ -45,7 +45,7 @@ jobs:
       - name: Publicar ZIP descargable
         uses: actions/upload-artifact@v4
         with:
-          name: WinCarePortable-v2.0-USB
+          name: WinCarePortable-v2.1-USB
           path: dist/WinCarePortable-v2.0.zip
           if-no-files-found: error
           retention-days: 30
