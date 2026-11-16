@@ -463,6 +463,29 @@ function Open-MTechnicianTool([string]$Tool) {
         [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'Error al abrir herramienta','OK','Warning')
     }
 }
+function Clear-MDnsCache {
+    $prompt='Se vaciará únicamente la caché de resolución DNS del computador. No se elimina información personal ni se libera espacio significativo. Las próximas consultas DNS pueden tardar ligeramente más. ¿Continuar?'
+    if([Windows.Forms.MessageBox]::Show($prompt,'Caché DNS · confirmar','YesNo','Question','Button2') -ne [Windows.Forms.DialogResult]::Yes){return}
+    try {
+        Clear-DnsClientCache -ErrorAction Stop
+        Write-MLog 'Caché DNS vaciada a petición del usuario.'
+        [void][Windows.Forms.MessageBox]::Show('Caché DNS vaciada. Si los problemas de conexión persisten, revisa el adaptador y los DNS configurados.','DNS','OK','Information')
+    }catch{
+        [void][Windows.Forms.MessageBox]::Show(('No se pudo vaciar DNS: '+$_.Exception.Message+[Environment]::NewLine+'Puede requerir ejecutar WinCare como administrador.'),'Permisos o servicio DNS','OK','Warning')
+    }
+}
+function Reset-MStoreCache {
+    $prompt='Se abrirá WSReset, la herramienta oficial de Windows para restablecer la caché de Microsoft Store. No desinstala aplicaciones, pero puede cerrar o abrir Store. ¿Continuar?'
+    if([Windows.Forms.MessageBox]::Show($prompt,'Restablecer caché de Store','YesNo','Question','Button2') -ne [Windows.Forms.DialogResult]::Yes){return}
+    try {
+        $app=Join-Path $env:WINDIR 'System32\wsreset.exe'
+        if(-not (Test-Path -LiteralPath $app -PathType Leaf)){throw 'WSReset no está disponible en este Windows.'}
+        [void](Start-Process -FilePath $app -ErrorAction Stop)
+        Write-MLog 'WSReset iniciado voluntariamente.'
+    }catch{
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir WSReset','OK','Warning')
+    }
+}
 function Empty-MRecycleBin {
     $warning='Esta operación vaciará la Papelera de reciclaje del usuario en los volúmenes accesibles.'+
         [Environment]::NewLine+'No es una limpieza de temporales y no se puede ofrecer aquí una estimación fiable del contenido.'+
@@ -741,7 +764,9 @@ $techTools=@(
     @('Servicios de Windows',500,195,{ Open-MTechnicianTool 'Servicios de Windows' }),
     @('Tareas programadas',740,195,{ Open-MTechnicianTool 'Tareas programadas' }),
     @('Monitor de recursos',20,253,{ Open-MTechnicianTool 'Monitor de recursos' }),
-    @('Configuración de inicio',260,253,{ Open-MTechnicianTool 'Configuración de inicio' })
+    @('Configuración de inicio',260,253,{ Open-MTechnicianTool 'Configuración de inicio' }),
+    @('Vaciar caché DNS',500,253,{ Clear-MDnsCache }),
+    @('Caché Microsoft Store',740,253,{ Reset-MStoreCache })
 )
 foreach($entry in $techTools) {
     $toolButton=New-Object Windows.Forms.Button
