@@ -312,11 +312,8 @@ $script:CGrid=New-CGrid $script:CTable
 $script:CGrid.Dock='Top';$script:CGrid.Height=280;$script:CGrid.Anchor='Top,Left,Right'
 $inventTab.Controls.Add($script:CGrid)
 $script:CGrid.Add_SelectionChanged({Set-CEditor})
-$editor=New-Object Windows.Forms.Panel
-$editor.Dock='Fill';$editor.BackColor=$script:CColors.Panel
-$inventTab.Controls.Add($editor)
-$editor.BringToFront()
-$script:CGrid.BringToFront()
+# Los campos se dibujan directamente sobre la pestaña: no crear un Panel Dock=Fill
+# por encima del editor porque ocultaría etiquetas y formularios.
 function Add-CLabel([string]$Text,[int]$X,[int]$Y,[int]$Width,$Parent){
     $l=New-Object Windows.Forms.Label
     $l.Text=$Text;$l.Location=New-Object Drawing.Point($X,$Y);$l.Size=New-Object Drawing.Size($Width,18)
