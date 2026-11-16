@@ -142,10 +142,11 @@ function Run-PDiscovery {
                 $responded++
             }
         }
-        foreach($n in @(Get-NetNeighbor -InterfaceIndex ([int]$iface.Index) -AddressFamily IPv4 -ErrorAction SilentlyContinue)){
+        foreach($n in @(Get-NetNeighbor -InterfaceIndex ([int]$iface.Index) -AddressFamily IPv4 -ErrorAction SilentlyContinue | Select-Object -First 512)){
             $ip=[string]$n.IPAddress
             if(Test-WCProPrivateTarget $ip $iface){
                 Add-PDevice $ip ([string]$n.LinkLayerAddress) 'Caché ARP' ([string]$n.State)
+                if($script:PDevices.Rows.Count -ge 256){break}
             }
         }
         Set-PStatus ('Descubrimiento finalizado: '+$targets.Count+' direcciones consultadas, '+$responded+' respuestas ICMP. No demuestra ausencia de otros equipos.')
