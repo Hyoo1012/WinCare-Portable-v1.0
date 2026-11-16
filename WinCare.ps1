@@ -239,6 +239,76 @@ function Read-DriverInventory {
     }
 }
 
+function Read-WinCareRules {
+    try {
+        $script:PolicyRules=@(Get-WCPolicyRules)
+        $script:PolicyLoadOK=$true
+    } catch {
+        $script:PolicyRules=@()
+        $script:PolicyLoadOK=$false
+        [void]$script:Warnings.Add('Archivo de reglas no legible: '+$_.Exception.Message+'. Para proteger el equipo se bloquearon las desinstalaciones.')
+        Write-Audit ('REGLAS: error de lectura; operaciones bloqueadas: '+$_.Exception.Message)
+    }
+}
+function Apply-WinCareRules {
+    foreach($category in @('Apps Store','Programas')) {
+        $type=if($category -eq 'Apps Store'){'Appx'}else{'Win32'}
+        foreach($row in $script:Tables[$category].Rows) {
+            $name=[string]$row['Nombre']; $publisher=[string]$row['Fabricante']
+            $protected=[string]$row['Riesgo'] -eq 'Protegido'
+            if(-not $script:PolicyLoadOK){
+                $row['Recomendación']='Error de configuración'
+                $row['Riesgo']='Protegido';$row['Acción']='Bloqueada'
+                $row['Detalle']='Corrige el archivo Configuracion\recomendaciones.json antes de realizar cambios.'
+                continue
+            }
+            if($protected) {
+                $row['Recomendación']='Conservar · Sistema'
+                continue
+            }
+            $rule=Get-WCPolicyMatch -Rules $script:PolicyRules -Type $type -Name $name -Publisher $publisher
+            if($rule){
+                if($rule.Recomendacion -eq 'Conservar'){
+                    $row['Recomendación']='Conservar · Técnico'
+                    $row['Riesgo']='Protegido';$row['Acción']='Bloqueada'
+                    $row['Detalle']='Marcada para conservar. Motivo: '+[string]$rule.Motivo
+                } else {
+                    $row['Recomendación']='Opcional · Técnico'
+                    $row['Detalle']=([string]$row['Detalle']+' | Nota: '+[string]$rule.Motivo)
+                }
+            }elseif($type -eq 'Appx' -and $script:OptionalApps.ContainsKey($name)){
+                $row['Recomendación']='Opcional · WinCare'
+            }
+        }
+    }
+}
+function Open-WinCareRecommendations {
+    $path=Join-Path $PSScriptRoot 'AppRecommendations.ps1'
+    if(-not (Test-Path -LiteralPath $path -PathType Leaf)){
+        [void][Windows.Forms.MessageBox]::Show('Falta AppRecommendations.ps1. Descarga todos los archivos del repositorio.','Módulo no encontrado','OK','Warning')
+        return
+    }
+    $type='Appx';$name='';$publisher=''
+    if($script:TabControl -and $script:TabControl.SelectedTab){
+        $category=[string]$script:TabControl.SelectedTab.Text
+        if($category -in @('Apps Store','Programas')){
+            $type=if($category -eq 'Programas'){'Win32'}else{'Appx'}
+            $grid=$script:Grids[$category]
+            if($grid.SelectedRows.Count -eq 1 -and -not $grid.SelectedRows[0].IsNewRow){
+                $name=[string]$grid.SelectedRows[0].Cells['Nombre'].Value
+                if($type -eq 'Win32'){$publisher=[string]$grid.SelectedRows[0].Cells['Fabricante'].Value}
+            }
+        }
+    }
+    try {
+        & $path -Owner $form -SuggestedType $type -SuggestedName $name -SuggestedPublisher $publisher
+        Refresh-Inventory
+    } catch {
+        Write-Audit ('EDITOR RECOMENDACIONES: '+$_.Exception.Message)
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir el catálogo','OK','Error')
+    }
+}
+
 function Update-Detail {
     # Evita eventos de seleccion prematuros durante el montaje de la interfaz.
     if ($null -eq $script:DetailLabel -or $null -eq $script:RemoveButton -or $null -eq $script:TabControl) { return }
@@ -259,7 +329,7 @@ function Update-Detail {
     $action = [string]$row.Cells['Acción'].Value
     $detail = [string]$row.Cells['Detalle'].Value
     $recommendation = [string]$row.Cells['Recomendación'].Value
-    $script:DetailLabel.Text = ('{0} | Riesgo: {1} | Método: {2}' + [Environment]::NewLine + '{3}') -f $name, $risk, $action, $detail
+    $script:DetailLabel.Text = ('{0} | Riesgo: {1} | Método: {2} | Guía: {3}' + [Environment]::NewLine + '{4}') -f $name, $risk, $action, $recommendation, $detail
     $script:RemoveButton.Enabled = $script:ChangeCheck.Checked -and $script:PolicyLoadOK -and ($action -in @('Appx','MSI'))
 }
 
