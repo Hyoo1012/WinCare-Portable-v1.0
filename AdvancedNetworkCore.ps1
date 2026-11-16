@@ -101,7 +101,7 @@ function New-WCProHtmlReport([object[]]$Devices,[object[]]$Measurements,[object[
     [void]$sb.Append('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe WinCare Redes</title><style>body{font:14px Segoe UI,Arial;background:#152131;color:#eaf2fb;max-width:1100px;margin:28px auto}table{border-collapse:collapse;width:100%;margin:15px 0}th,td{border:1px solid #687b8e;padding:8px;text-align:left;overflow-wrap:anywhere}h1,h2{color:#91cfff}@media print{body{color:#18202b;background:white}h1,h2{color:#16365a}}</style></head><body>')
     [void]$sb.Append('<h1>Informe de red · WinCare Portable</h1><p>Diseñado por DevPoderSEO · '+(Get-Date -Format 'yyyy-MM-dd HH:mm')+'</p>')
     [void]$sb.Append('<p>Mapa de red lógico estimado: no demuestra conexiones físicas L2, fabricante ni sistema operativo. Sin agente externo, los datos pueden ser parciales.</p><p>'+(Encode-WCProHtml $Comment)+'</p>')
-    foreach($section in @(@('Equipos observados',$Devices,@('IP','MAC','Fabricante','Origen','Estado','SO')), @('Métricas',$Measurements,@('Momento','IP','Pérdida','RTT medio','Jitter','Estado')), @('Conexiones por aplicación',$Applications,@('Proceso','PID','Conexiones','Remotos')))){
+    foreach($section in @(@('Equipos observados',$Devices,@('IP','MAC','Fabricante','Origen','Estado','SO','Confianza')), @('Métricas',$Measurements,@('Momento','IP','Pérdida','RTT medio','Jitter','Estado')), @('Conexiones por aplicación',$Applications,@('Proceso','PID','Conexiones','Remotos')))){
         [void]$sb.Append('<h2>'+(Encode-WCProHtml $section[0])+'</h2><table><tr>')
         foreach($c in $section[2]){[void]$sb.Append('<th>'+(Encode-WCProHtml $c)+'</th>')}
         [void]$sb.Append('</tr>')
