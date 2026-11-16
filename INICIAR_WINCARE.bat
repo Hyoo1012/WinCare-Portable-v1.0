@@ -34,6 +34,15 @@ if not exist "%~dp0NetworkDiagnostics.ps1" (
 if not exist "%~dp0NetworkDiagnosticsCore.ps1" (
   echo ADVERTENCIA: falta NetworkDiagnosticsCore.ps1. Pruebas de alcance seguro no disponibles.
 )
+if not exist "%~dp0SupportTechnician.ps1" (
+  echo ADVERTENCIA: falta SupportTechnician.ps1. Soporte de PC no estara disponible.
+)
+if not exist "%~dp0CCTVAudit.ps1" (
+  echo ADVERTENCIA: falta CCTVAudit.ps1. Diagnostico CCTV no estara disponible.
+)
+if not exist "%~dp0CCTVCore.ps1" (
+  echo ADVERTENCIA: falta CCTVCore.ps1. Catalogo CCTV no estara disponible.
+)
 "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File "%~dp0WinCare.ps1"
 if errorlevel 1 pause
 endlocal
