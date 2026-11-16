@@ -553,15 +553,48 @@ foreach($name in @('Área','Componente','Estado','Detalle','Recomendación')){
 $diagGrid.DataSource=$script:MDiagnostics.DefaultView
 $diagTab.Controls.Add($diagGrid)
 
+$categoryLabel=New-Object Windows.Forms.Label
+$categoryLabel.Text='Categoría a limpiar:'
+$categoryLabel.Location=New-Object Drawing.Point(15,13)
+$categoryLabel.Size=New-Object Drawing.Size(170,25)
+$categoryLabel.ForeColor=$script:MColors.Text
+$cleanTab.Controls.Add($categoryLabel)
+
+$script:MCategoryPicker=New-Object Windows.Forms.ComboBox
+$script:MCategoryPicker.DropDownStyle='DropDownList'
+$script:MCategoryPicker.DisplayMember='Label'
+$script:MCategoryPicker.Location=New-Object Drawing.Point(184,8)
+$script:MCategoryPicker.Size=New-Object Drawing.Size(340,29)
+$script:MCategoryPicker.BackColor=$script:MColors.Panel
+$script:MCategoryPicker.ForeColor=$script:MColors.Text
+$script:MCategoryPicker.Items.AddRange([object[]]$script:MCategoryOptions)
+$cleanTab.Controls.Add($script:MCategoryPicker)
+
 $cleanNotice=New-Object Windows.Forms.Label
-$cleanNotice.Text='Solo archivos .tmp, .temp, .cache, .bak y .old con más de 7 días (usuario) o 14 días (Windows). Se omiten enlaces, ejecutables y archivos cambiados.'
-$cleanNotice.Location=New-Object Drawing.Point(15,9)
-$cleanNotice.Size=New-Object Drawing.Size(1130,29)
+$cleanNotice.Text='Selecciona una categoría y pulsa Escanear.'
+$cleanNotice.Location=New-Object Drawing.Point(539,10)
+$cleanNotice.Size=New-Object Drawing.Size(605,30)
 $cleanNotice.Anchor='Top,Left,Right'
 $cleanNotice.ForeColor=$script:MColors.Muted
 $cleanTab.Controls.Add($cleanNotice)
+$script:MCategoryPicker.Add_SelectedIndexChanged({
+    # Cambiar de categoría invalida la vista previa, evitando mezclar archivos.
+    if($script:MCandidates){
+        $script:MSelectionUpdating=$true
+        try{
+            $script:MCandidates.Clear()
+            $script:MFiles.Clear()
+            $script:MScanFinished=$false
+            if($script:MConfirm){$script:MConfirm.Checked=$false}
+        }finally{$script:MSelectionUpdating=$false}
+    }
+    if($script:MCategoryPicker.SelectedItem){$cleanNotice.Text=[string]$script:MCategoryPicker.SelectedItem.Hint}
+    Update-MCleanEnabled
+})
+$script:MCategoryPicker.SelectedIndex=0
+
 $script:MScan=New-Object Windows.Forms.Button
-$script:MScan.Text='Escanear temporales'
+$script:MScan.Text='Escanear categoría'
 $script:MScan.Location=New-Object Drawing.Point(14,42)
 $script:MScan.Size=New-Object Drawing.Size(165,33)
 $script:MScan.BackColor=$script:MColors.Accent
@@ -606,7 +639,7 @@ $script:MCandidates=New-Object System.Data.DataTable
 foreach($name in @('Origen','Ruta','Tamaño','Modificado','Identificador')){[void]$script:MCandidates.Columns.Add($name,[string])}
 $script:MGrid=New-Object Windows.Forms.DataGridView
 $script:MGrid.Location=New-Object Drawing.Point(14,85)
-$script:MGrid.Size=New-Object Drawing.Size(1135,468)
+$script:MGrid.Size=New-Object Drawing.Size(1135,455)
 $script:MGrid.Anchor='Top,Bottom,Left,Right'
 $script:MGrid.AllowUserToAddRows=$false
 $script:MGrid.AllowUserToDeleteRows=$false
@@ -636,10 +669,22 @@ foreach($name in @('Origen','Ruta','Tamaño','Modificado','Identificador')){
 }
 $script:MGrid.DataSource=$script:MCandidates.DefaultView
 $script:MGrid.Add_CurrentCellDirtyStateChanged({
-    if($script:MGrid.IsCurrentCellDirty){[void]$script:MGrid.CommitEdit([Windows.Forms.DataGridViewDataErrorContexts]::Commit)}
+    if($script:MGrid.IsCurrentCellDirty){
+        [void]$script:MGrid.CommitEdit([Windows.Forms.DataGridViewDataErrorContexts]::Commit)
+        [void]$script:MGrid.EndEdit()
+        Update-MCleanEnabled
+    }
 })
 $script:MGrid.Add_CellValueChanged({ Update-MCleanEnabled })
 $cleanTab.Controls.Add($script:MGrid)
+
+$script:MSelectedInfo=New-Object Windows.Forms.Label
+$script:MSelectedInfo.Text='No hay archivos seleccionados. Escanea una categoría y marca qué deseas eliminar.'
+$script:MSelectedInfo.Location=New-Object Drawing.Point(16,547)
+$script:MSelectedInfo.Size=New-Object Drawing.Size(1118,30)
+$script:MSelectedInfo.Anchor='Bottom,Left,Right'
+$script:MSelectedInfo.ForeColor=[Drawing.Color]::FromArgb(246,184,92)
+$cleanTab.Controls.Add($script:MSelectedInfo)
 
 $toolsText=New-Object Windows.Forms.Label
 $toolsText.Text='Estas funciones solo abren herramientas oficiales de Windows. SFC y DISM son verificaciones voluntarias que NO reparan archivos.'
@@ -687,7 +732,11 @@ if($SmokeTest){
     if($diagGrid.Columns.Count -ne 5){throw 'Fallo inicialización columnas de mantenimiento.'}
     if($script:MClean.Enabled){throw 'La limpieza no puede estar habilitada por defecto.'}
     if($script:MConfirm.Checked){throw 'La confirmación no puede estar marcada por defecto.'}
-    Write-Host 'OK: panel mantenimiento (5 columnas), limpieza (6 columnas), borrado deshabilitado.'
+    if($script:MCategoryPicker.Items.Count -ne 5 -or $script:MCategoryPicker.SelectedIndex -ne 0){
+        throw 'El selector de categorías de limpieza no se inicializó correctamente.'
+    }
+    if($script:MSelectedInfo -eq $null){throw 'Falta información de selección.'}
+    Write-Host 'OK: mantenimiento, limpieza con 5 categorías, vista previa, selección y borrado inicialmente deshabilitado.'
     $script:MForm.Dispose()
     return
 }
