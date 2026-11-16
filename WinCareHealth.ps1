@@ -11,7 +11,7 @@ $script:HRequired=@(
  'AppRecommendations.ps1','NetworkAudit.ps1','NetworkDiagnostics.ps1',
  'NetworkDiagnosticsCore.ps1','HardwareAudit.ps1','MaintenanceAudit.ps1',
  'TechToolkit.ps1','SupportTechnician.ps1','CCTVCore.ps1','CCTVAudit.ps1',
- 'INICIAR_WINCARE.bat'
+ 'WinCareHealth.ps1','INICIAR_WINCARE.bat'
 )
 $script:HRows=New-Object System.Data.DataTable
 foreach($n in @('Área','Verificación','Resultado','Observación')){[void]$script:HRows.Columns.Add($n,[string])}
@@ -38,7 +38,34 @@ function Get-HReports {
  }
  return ''
 }
+function Read-HIntegrityChecks {
+ $manifest=Join-Path $PSScriptRoot 'SHA256SUMS.txt'
+ if(-not (Test-Path -LiteralPath $manifest -PathType Leaf)){
+   Add-HResult 'Integridad' 'SHA256SUMS.txt' 'Información' 'No existe manifiesto SHA256: probablemente es una copia del código. Usa el ZIP generado en GitHub Actions.'
+   return
+ }
+ $valid=0;$failed=0
+ try{
+   foreach($line in @(Get-Content -LiteralPath $manifest -Encoding UTF8 -ErrorAction Stop | Select-Object -First 256)){
+     if($line -notmatch '^([0-9A-Fa-f]{64})  ([A-Za-z0-9_.\/-]+)$'){$failed++;continue}
+     $expected=[string]$matches[1];$relative=[string]$matches[2]
+     if($relative -match '(^|/)\.\.(/|$)' -or $relative -match '^/'){ $failed++;continue }
+     $file=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot $relative.Replace('/','\')))
+     $root=[IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\')+'\'
+     if(-not $file.StartsWith($root,[StringComparison]::OrdinalIgnoreCase)){$failed++;continue}
+     if(-not (Test-Path -LiteralPath $file -PathType Leaf)){$failed++;continue}
+     $actual=(Get-FileHash -LiteralPath $file -Algorithm SHA256 -ErrorAction Stop).Hash
+     if($actual -eq $expected){$valid++}else{$failed++}
+   }
+   if($failed -eq 0 -and $valid -gt 0){
+     Add-HResult 'Integridad' 'Archivos del paquete' 'Correcto' ('Coinciden los SHA256 de '+$valid+' archivos. No verifica autenticidad del editor.')
+   }else{
+     Add-HResult 'Integridad' 'Archivos del paquete' 'Revisar' ('Archivos correctos: '+$valid+'; diferentes, ilegibles o faltantes: '+$failed+'. Descarga un ZIP íntegro.')
+   }
+ }catch{Add-HResult 'Integridad' 'Archivos del paquete' 'Revisar' ('No se pudo revisar SHA256: '+$_.Exception.Message)}
+}
 function Read-HChecks {
+ Read-HIntegrityChecks
  $script:HRows.Clear()
  $script:HReports=''
  foreach($file in $script:HRequired){
