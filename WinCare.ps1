@@ -1025,6 +1025,20 @@ if ($SmokeTest) {
     if($navBar.ColumnCount -ne 5 -or $navBar.Controls.Count -ne 5){throw 'Navegación de módulos incompleta.'}
     if($actionBar.ColumnCount -ne 6 -or $actionBar.Controls.Count -ne 6){throw 'Barra de acciones incompleta.'}
     if(-not $technicianBtn -or -not $policyBtn){throw 'Faltan Taller técnico y Recomendaciones.'}
+    # Probar de forma aislada el bloqueo de programas con recomendación Conservar.
+    # No se consulta el equipo ni se desinstala software en esta prueba.
+    $script:PolicyLoadOK=$true
+    $script:PolicyRules=@()
+    $script:PolicyRules += (Test-WCPolicyEntry ([pscustomobject]@{Tipo='Appx';Nombre='Clipchamp.Clipchamp';Fabricante='';Recomendacion='Conservar';Motivo='Necesario para el cliente'}))
+    $script:PolicyRules += (Test-WCPolicyEntry ([pscustomobject]@{Tipo='Appx';Nombre='Microsoft.WindowsStore';Fabricante='';Recomendacion='Opcional';Motivo='La regla no debe desbloquear'}))
+    Add-InventoryRecord 'Apps Store' 'Appx/MSIX' 'Clipchamp.Clipchamp' '1.0' 'Publisher' 'Instalada' 'Bajo' 'Appx' 'Paquete opcional de prueba' 'Clipchamp.test'
+    Add-InventoryRecord 'Apps Store' 'Appx/MSIX' 'Microsoft.WindowsStore' '1.0' 'Microsoft' 'Instalada' 'Protegido' 'Bloqueada' 'Componente crítico' 'Store.test'
+    Apply-WinCareRules
+    if([string]$script:Tables['Apps Store'].Rows[0]['Acción'] -ne 'Bloqueada'){throw 'La regla Conservar no bloqueó desinstalar.'}
+    if([string]$script:Tables['Apps Store'].Rows[1]['Acción'] -ne 'Bloqueada'){throw 'Opcional desbloqueó un componente esencial.'}
+    Reset-Inventory
+    $script:PolicyRules=@()
+    Write-Host 'OK: políticas Conservar bloquean; Opcional no desbloquea componentes del sistema.'
     Write-Host 'OK: 7 tablas, recomendaciones, 5 módulos y 6 acciones de inventario.'
     $form.Dispose()
     return
