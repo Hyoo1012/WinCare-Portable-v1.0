@@ -16,8 +16,9 @@ $script:PWarn=[Drawing.Color]::FromArgb(250,196,115)
 $script:PBusy=$false
 $script:PInterfaces=@()
 $script:POui=@{}
+$script:PTrusted=@()
 $script:PDevices=New-Object System.Data.DataTable
-foreach($name in @('IP','MAC','Fabricante','Origen','Estado','SO')){[void]$script:PDevices.Columns.Add($name,[string])}
+foreach($name in @('IP','MAC','Fabricante','Origen','Estado','SO','Confianza')){[void]$script:PDevices.Columns.Add($name,[string])}
 $script:PMetrics=New-Object System.Data.DataTable
 foreach($name in @('Momento','IP','Pérdida','RTT medio','Jitter','Estado')){[void]$script:PMetrics.Columns.Add($name,[string])}
 $script:PFlows=New-Object System.Data.DataTable
@@ -80,6 +81,36 @@ function Read-PAdapters {
     }catch{Set-PStatus ('No se pudo consultar adaptadores: '+$_.Exception.Message)}
     finally{$script:PBusy=$false}
 }
+function Read-PTrusted {
+    $script:PTrusted=@()
+    $candidate=Join-Path $PSScriptRoot 'Red-Confiables.json'
+    if(-not (Test-Path -LiteralPath $candidate -PathType Leaf)){
+        $candidate=Join-Path (Join-Path $PSScriptRoot 'Reportes') 'Red-Confiables.json'
+    }
+    if(-not (Test-Path -LiteralPath $candidate -PathType Leaf)){return}
+    try{
+        $file=Get-Item -LiteralPath $candidate -Force -ErrorAction Stop
+        if($file.Length -gt 524288){throw 'El catálogo de confianza supera 512 KB.'}
+        $raw=Get-Content -LiteralPath $candidate -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        $script:PTrusted=@($raw | Where-Object {$_ -and $_.IP} | Select-Object -First 500)
+    }catch{Set-PStatus ('Lista de confianza no legible: '+$_.Exception.Message+'. No se bloqueará ningún dispositivo.')}
+}
+function Get-PConfidence([string]$IP,[string]$Mac){
+    if(-not $script:PTrusted.Count){return 'Sin referencias del cliente'}
+    $plain=([string]$Mac -replace '[^0-9a-fA-F]','').ToUpperInvariant()
+    foreach($entry in $script:PTrusted){
+        $saved=([string]$entry.MAC -replace '[^0-9a-fA-F]','').ToUpperInvariant()
+        if([string]$entry.IP -eq $IP -and $plain.Length -eq 12 -and $saved -eq $plain){
+            return ('Registrado: '+[string]$entry.Nombre)
+        }
+    }
+    foreach($entry in $script:PTrusted){
+        $saved=([string]$entry.MAC -replace '[^0-9a-fA-F]','').ToUpperInvariant()
+        if($plain.Length -eq 12 -and $saved -eq $plain){return 'MAC conocida, IP diferente (revisar DHCP)'}
+        if([string]$entry.IP -eq $IP -and $saved.Length -eq 12 -and $plain.Length -eq 12 -and $saved -ne $plain){return 'IP conocida, MAC diferente (revisar)'}
+    }
+    return 'No registrado: revisar con el responsable'
+}
 function Add-PDevice([string]$Address,[string]$Mac,[string]$Origin,[string]$State){
     if((Get-WCIPv4Scope $Address) -ne 'Privada'){return}
     $row=$null
@@ -90,6 +121,7 @@ function Add-PDevice([string]$Address,[string]$Mac,[string]$Origin,[string]$Stat
     $row['Fabricante']=Get-WCProMacVendor ([string]$row['MAC']) $script:POui
     $row['Origen']=$Origin;$row['Estado']=$State
     $row['SO']='No determinado'
+    $row['Confianza']=Get-PConfidence $Address ([string]$row['MAC'])
     if($row.RowState -eq [Data.DataRowState]::Detached){[void]$script:PDevices.Rows.Add($row)}
 }
 function Read-PPassive {
@@ -98,6 +130,7 @@ function Read-PPassive {
     $script:PBusy=$true
     try{
         $script:PDevices.Clear()
+        Read-PTrusted
         $script:POui=Read-WCProOui (Join-Path $PSScriptRoot 'Configuracion\fabricantes-oui.csv')
         foreach($n in @(Get-NetNeighbor -InterfaceIndex ([int]$iface.Index) -AddressFamily IPv4 -ErrorAction Stop | Select-Object -First 512)){
             $ip=[string]$n.IPAddress
@@ -105,7 +138,7 @@ function Read-PPassive {
             Add-PDevice $ip ([string]$n.LinkLayerAddress) 'Caché ARP' ([string]$n.State)
             if($script:PDevices.Rows.Count -ge 256){break}
         }
-        Set-PStatus ('Equipos observados: '+$script:PDevices.Rows.Count+'. La caché ARP no es un inventario completo ni identifica el SO.')
+        Set-PStatus ('Equipos observados: '+$script:PDevices.Rows.Count+'. La caché ARP no es un inventario completo ni identifica el SO. No registrado NO significa intrusión.')
     }catch{Set-PStatus ('Lectura ARP parcial: '+$_.Exception.Message)}
     finally{$script:PBusy=$false}
 }
@@ -133,6 +166,7 @@ function Run-PDiscovery {
     if(-not (Confirm-PActive ('Se enviará un ping a un máximo de '+$targets.Count+' IPv4 privadas de '+$iface.IPv4+'/'+$iface.Prefix+'. No se escaneará toda la red.'))){return}
     $script:PBusy=$true
     try{
+        Read-PTrusted
         $responded=0
         foreach($target in $targets){
             if(-not (Test-WCProPrivateTarget $target $iface)){continue}
@@ -414,7 +448,7 @@ $discovery.Text='Descubrir hasta 16 IP (autorizado)';$discovery.Size=New-Object 
 $discovery.Add_Click({Run-PDiscovery})
 $localBar.Controls.Add($discovery)
 $localNote=New-Object Windows.Forms.Label
-$localNote.Text='Primero Analizar pestaña = consulta ARP pasiva. Fabricante opcional desde archivo OUI local.'
+$localNote.Text='ARP pasivo · OUI opcional · Confianza: comparación con Red-Confiables.json, NO detección de intrusión.'
 $localNote.ForeColor=$script:PWarn;$localNote.Width=735;$localNote.Height=38
 $localBar.Controls.Add($localNote)
 $pages['Red local'].Controls.Add($localBar);$localBar.BringToFront()
@@ -504,6 +538,7 @@ $script:PForm.Controls.Add($script:PStatus)
 if($SmokeTest){
     if($script:PTabs.TabPages.Count -ne 7 -or $script:PConsent.Checked){throw 'Pestañas incompletas o consentimiento activo por defecto.'}
     if($script:PDevices.Rows.Count -or $script:PMetrics.Rows.Count -or $script:PFlows.Rows.Count){throw 'Se ejecutó diagnóstico sin clic.'}
+    if($devicesGrid.Columns.Count -ne 7){throw 'Falta estado de confianza del equipo.'}
     Write-Host 'OK: siete pestañas de redes avanzadas sin tráfico ni consultas automáticas.'
     $script:PForm.Dispose();return
 }
