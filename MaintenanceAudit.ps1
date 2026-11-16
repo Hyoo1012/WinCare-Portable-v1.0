@@ -734,6 +734,85 @@ $script:MSelectedInfo.Anchor='Bottom,Left,Right'
 $script:MSelectedInfo.ForeColor=[Drawing.Color]::FromArgb(246,184,92)
 $cleanTab.Controls.Add($script:MSelectedInfo)
 
+# ---- Diseño responsivo: la acción de limpiar queda siempre visible arriba ----
+# Reubicar los controles originales en filas separadas evita que el grid
+# tape el botón o que un anclaje Top,Right lo empuje fuera de la ventana.
+$script:MCleanLayout=New-Object Windows.Forms.TableLayoutPanel
+$script:MCleanLayout.Dock='Fill'
+$script:MCleanLayout.Padding=New-Object Windows.Forms.Padding(8,5,8,8)
+$script:MCleanLayout.Margin=New-Object Windows.Forms.Padding(0)
+$script:MCleanLayout.ColumnCount=1
+$script:MCleanLayout.RowCount=4
+[void]$script:MCleanLayout.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,[single]100)))
+foreach($height in @(44,56)){
+    [void]$script:MCleanLayout.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,[single]$height)))
+}
+[void]$script:MCleanLayout.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent,[single]100)))
+[void]$script:MCleanLayout.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,[single]46)))
+
+$categoryBar=New-Object Windows.Forms.TableLayoutPanel
+$categoryBar.Dock='Fill'
+$categoryBar.ColumnCount=3
+$categoryBar.RowCount=1
+foreach($width in @(16,33,51)){
+    [void]$categoryBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,[single]$width)))
+}
+$categoryBar.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent,[single]100)))|Out-Null
+foreach($item in @($categoryLabel,$script:MCategoryPicker,$cleanNotice)){$cleanTab.Controls.Remove($item)}
+$categoryLabel.Dock='Fill'
+$categoryLabel.TextAlign='MiddleLeft'
+$categoryLabel.Margin=New-Object Windows.Forms.Padding(5,7,4,3)
+$script:MCategoryPicker.Dock='Fill'
+$script:MCategoryPicker.Margin=New-Object Windows.Forms.Padding(4,5,4,5)
+$cleanNotice.Dock='Fill'
+$cleanNotice.TextAlign='MiddleLeft'
+$cleanNotice.Margin=New-Object Windows.Forms.Padding(8,3,3,3)
+$categoryBar.Controls.Add($categoryLabel,0,0)
+$categoryBar.Controls.Add($script:MCategoryPicker,1,0)
+$categoryBar.Controls.Add($cleanNotice,2,0)
+$script:MCleanLayout.Controls.Add($categoryBar,0,0)
+
+$script:MCleanActionBar=New-Object Windows.Forms.TableLayoutPanel
+$script:MCleanActionBar.Dock='Fill'
+$script:MCleanActionBar.ColumnCount=5
+$script:MCleanActionBar.RowCount=1
+foreach($width in @(15,13,11,41,20)){
+    [void]$script:MCleanActionBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,[single]$width)))
+}
+[void]$script:MCleanActionBar.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent,[single]100)))
+$actionItems=@($script:MScan,$mark,$unmark,$script:MConfirm,$script:MClean)
+for($n=0;$n -lt $actionItems.Count;$n++){
+    $control=$actionItems[$n]
+    $cleanTab.Controls.Remove($control)
+    $control.Dock='Fill'
+    $control.Margin=New-Object Windows.Forms.Padding(4,6,4,6)
+    $script:MCleanActionBar.Controls.Add($control,$n,0)
+}
+$script:MClean.BackColor=[Drawing.Color]::FromArgb(173,68,54)
+$script:MClean.FlatAppearance.BorderSize=0
+$script:MClean.Font=New-Object Drawing.Font('Segoe UI Semibold',10,[Drawing.FontStyle]::Bold)
+$script:MClean.Text='Limpiar seleccionados'
+$script:MClean.Visible=$true
+$script:MCleanLayout.Controls.Add($script:MCleanActionBar,0,1)
+
+$cleanTab.Controls.Remove($script:MGrid)
+$script:MGrid.Dock='Fill'
+$script:MGrid.Margin=New-Object Windows.Forms.Padding(4,2,4,2)
+$script:MCleanLayout.Controls.Add($script:MGrid,0,2)
+
+$cleanTab.Controls.Remove($script:MSelectedInfo)
+$script:MSelectedInfo.Dock='Fill'
+$script:MSelectedInfo.TextAlign='MiddleLeft'
+$script:MSelectedInfo.Margin=New-Object Windows.Forms.Padding(7,4,3,4)
+$script:MCleanLayout.Controls.Add($script:MSelectedInfo,0,3)
+$cleanTab.Controls.Add($script:MCleanLayout)
+
+$cleanTips=New-Object Windows.Forms.ToolTip
+$cleanTips.SetToolTip($script:MCategoryPicker,'Elige un tipo de archivos. Se analiza una categoría por vez.')
+$cleanTips.SetToolTip($mark,'Marca los candidatos encontrados sin eliminarlos.')
+$cleanTips.SetToolTip($script:MConfirm,'Necesario antes de ejecutar una limpieza real.')
+$cleanTips.SetToolTip($script:MClean,'Elimina solo los archivos elegidos después de revalidar ruta, antigüedad y confirmación.')
+
 $toolsText=New-Object Windows.Forms.Label
 $toolsText.Text='Estas funciones solo abren herramientas oficiales de Windows. SFC y DISM son verificaciones voluntarias que NO reparan archivos.'
 $toolsText.Location=New-Object Drawing.Point(22,18)
@@ -802,6 +881,9 @@ if($SmokeTest){
         throw 'El selector de categorías de limpieza no se inicializó correctamente.'
     }
     if($script:MSelectedInfo -eq $null){throw 'Falta información de selección.'}
+    if($script:MCleanActionBar.Controls.Count -ne 5 -or $script:MCleanActionBar.GetColumn($script:MClean) -ne 4){throw 'El botón Limpiar no está en la barra visible.'}
+    if($script:MClean.Dock -ne 'Fill' -or $script:MGrid.Dock -ne 'Fill'){throw 'La distribución responsiva de limpieza no está inicializada.'}
+    if($script:MCleanLayout.GetRow($script:MGrid) -ne 2 -or $script:MCleanLayout.GetRow($script:MCleanActionBar) -ne 1){throw 'El listado está encima de los controles de limpieza.'}
     Write-Host 'OK: mantenimiento, limpieza con 5 categorías, vista previa, selección y borrado inicialmente deshabilitado.'
     $script:MForm.Dispose()
     return
