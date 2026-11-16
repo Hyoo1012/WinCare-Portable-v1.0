@@ -1,4 +1,4 @@
-WINCARE PORTABLE v1.6
+WINCARE PORTABLE v1.8
 DISEÑADO POR DEVPODERSEO
 =======================
 
@@ -54,7 +54,31 @@ REDES v1.6 - DIAGNOSTICO INTELIGENTE
 5. Exporta diagnostico HTML/CSV para registrar evidencias tecnicas.
    Revisa IP y MAC antes de compartirlo con clientes.
 
+SOPORTE PC v1.7
+1. Abre 06 SOPORTE PC para revisar impresoras, cola de impresión,
+   errores recientes de Windows y aplicaciones de inicio.
+2. El reinicio de Spooler es OPCIONAL, requiere administrador y
+   DOBLE confirmacion. Puede interrumpir la impresion.
+3. Guarda un historial de intervención con orden, observaciones,
+   acciones y resultado; exporta HTML, JSON y CSV locales.
+4. Exportar configuración guarda red/impresoras/inicio SIN
+   contraseñas Wi-Fi y no sustituye un respaldo completo.
+
+CCTV Y SEGURIDAD ELECTRONICA v1.8
+1. Abre 07 CCTV / NVR. Registra cámaras, grabadores o switches PoE
+   con IP PRIVADA, tipo, puerto, ubicacion y notas SIN CLAVES.
+2. Selecciona el equipo, el adaptador y confirma que estas autorizado.
+   Solo se enviará un PING y una comprobacion TCP a UN puerto.
+3. La prueba no verifica video, ONVIF, RTSP ni grabaciones.
+4. El mapa es LOGICO (según el inventario del técnico).
+5. El informe HTML/CSV se genera localmente y puede contener
+   IP, MAC, nombres de equipos y ubicaciones del cliente.
+
 ADVERTENCIAS
+- CCTV no escanea redes publicas, no prueba credenciales,
+  no obtiene imágenes ni cambia ajustes de cámaras.
+- Un puerto accesible no certifica el servicio ni el fabricante.
+- No elimines trabajos de impresión ni cambies servicios sin permiso.
 - Las pruebas activas hacen trafico y pueden quedar registradas.
 - Ping externo 1.1.1.1, DNS example.com y HTTPS microsoft.com solo
   con autorizacion; proveedores pueden ver tu IP de salida.
