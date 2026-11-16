@@ -1,4 +1,4 @@
-# WinCare Portable v1.6
+# WinCare Portable v1.8
 
 **Diseñado por DevPoderSEO**
 
@@ -11,7 +11,7 @@ Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar 
 1. En este repositorio selecciona **Code → Download ZIP**.
 2. Descomprime todos los archivos en una misma carpeta, por ejemplo `Ventoy:\Herramientas\WinCarePortable\`.
 3. Arranca Windows normalmente y ejecuta `INICIAR_WINCARE.bat`.
-4. Selecciona uno de los cinco módulos: **Hardware y salud, Red e IP, Mantenimiento, Taller técnico o Recomendaciones**. El inventario principal permanece en siete pestañas.
+4. Elige uno de los **siete módulos**: Hardware y salud, Red e IP, Mantenimiento, Taller técnico, Recomendaciones, Soporte PC o CCTV/NVR.
 
 ### Permisos de administrador (UAC)
 
@@ -38,6 +38,9 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | `TechToolkit.ps1` | Informe técnico HTML/CSV, respaldo de drivers y reparación guiada |
 | NetworkDiagnostics.ps1 | Diagnóstico inteligente de IP, DHCP, DNS, Internet, Wi-Fi y LAN autorizada |
 | NetworkDiagnosticsCore.ps1 | Reglas estrictas de IPv4, subredes y alcance de sondeo LAN |
+| SupportTechnician.ps1 | Soporte v1.7: impresoras, eventos Windows, inicio, respaldos e intervenciones |
+| CCTVCore.ps1 | Catálogo portátil validado y reglas de seguridad de dispositivos CCTV |
+| CCTVAudit.ps1 | CCTV v1.8: inventario, mapa lógico y diagnóstico limitado de cámaras/NVR/DVR |
 | `Configuracion/recomendaciones.json` | Se crea al guardar la primera regla y se puede copiar con Ventoy |
 | `INICIAR_WINCARE.bat` | Iniciador local |
 | `LEEME.txt` | Guía rápida |
@@ -168,6 +171,46 @@ El informe se guarda en una subcarpeta `Reportes/taller-AAAAMMDD-HHMMSS/`. Reví
 ## Interfaz v1.5
 
 La pantalla principal separa los cinco módulos en una barra de navegación superior y deja las operaciones sensibles en una fila inferior. Se amplió el espacio del inventario, se añadió la columna **Recomendación** y se usan etiquetas, colores y ayudas contextuales para facilitar la identificación. El modo desinstalación permanece apagado por defecto.
+
+## Soporte y reparaciones de PC — v1.7
+
+Abre **06 Soporte PC** en el menú de WinCare. El módulo reúne cuatro secciones. No deshabilita servicios ni borra datos durante el análisis.
+
+**Impresoras:** comprueba el servicio Spooler, el inventario de impresoras y controladores, puertos y número de trabajos pendientes cuando Windows permite consultarlos. Abre la configuración de impresoras. La acción manual Reiniciar Spooler requiere permisos de administrador y **dos confirmaciones**. Puede interrumpir trabajos y causar reenvíos, pero no vacía los documentos de la cola ni elimina controladores.
+
+**Errores de Windows:** eventos recientes del registro System relacionados con apagados inesperados y servicios (IDs 41, 6008, 1001, 7000, 7001, 7009, 7023, 7031 y 7034). Consulta hasta 80 eventos de los últimos 14 días. Un evento histórico no confirma un fallo actual; la ausencia de eventos no demuestra que el equipo esté libre de problemas.
+
+**Inicio y servicios:** muestra entradas de inicio con CIM y permite abrir Administrador de tareas y Servicios. No deshabilita aplicaciones o servicios automáticamente.
+
+**Respaldos e intervenciones:** registra el problema, acciones, resultado, cliente y orden de trabajo. Guardar historial solicita confirmación y genera HTML imprimible, JSON y CSV en Reportes/soporte-AAAAMMDD-HHMMSS. Los campos escritos por el técnico se codifican de forma segura en el HTML.
+
+**Exportar configuración:** permite seleccionar una carpeta local o USB fuera de Windows y guardar direcciones IP, DNS, gateways, impresoras y programas de inicio en CSV cuando estén disponibles. **No obtiene contraseñas Wi-Fi ni tokens**, no hace imagen de sistema y no garantiza restauración. Puede contener nombres de usuario, IP y rutas: guarda el informe de forma privada.
+
+Las reparaciones SFC, DISM y CHKDSK ya se encuentran en **04 Taller técnico** para evitar acciones peligrosas duplicadas. Haz respaldos antes de intervenir.
+
+## CCTV y seguridad electrónica — v1.8
+
+Abre **07 CCTV / NVR**. No se solicitan ni almacenan usuarios, contraseñas, tokens, videos ni grabaciones. La herramienta sigue el flujo: **inventario → selección → autorización → prueba puntual → informe**.
+
+### Inventario editable
+
+Registra nombre, IPv4 privada, tipo declarado (Cámara IP, NVR, DVR, Switch PoE, Router u Otro), puerto (80, 443, 554, 8000, 8080 u 8899), ubicación y notas sin contraseñas. El catálogo tiene un máximo de **100 registros**. El número de equipos guardados no implica escaneos automáticos.
+
+Se guarda en Configuracion/cctv-dispositivos.json junto al programa, si el USB permite escritura; si es de solo lectura, se utiliza Documentos/WinCarePortable/Configuracion. Se guarda un respaldo .bak al sobrescribir. No se reemplazan catálogos incompatibles o ilegibles. La categoría de cada equipo es **declarada por el técnico**, no identificada automáticamente.
+
+### Prueba activa autorizada
+
+1. Selecciona **un dispositivo** desde Inventario.
+2. En Pruebas autorizadas, selecciona el adaptador activo y marca que tienes permiso del responsable.
+3. WinCare verifica que la IP sea privada y pertenezca a la subred real del adaptador elegido.
+4. Autoriza expresamente una comprobación de conectividad ICMP y una conexión TCP **a un único puerto**.
+5. Examina los resultados y las recomendaciones, sin modificar ningún dispositivo.
+
+No realiza escaneos masivos, búsqueda de credenciales, intentos de inicio de sesión, consultas RTSP/ONVIF ni acceso al video. Una respuesta ICMP no garantiza que el dispositivo funcione; un puerto abierto no demuestra que se trate de una cámara, ni verifica transmisión, grabación, compatibilidad ONVIF, RTSP ni seguridad. Los fallos podrían deberse a VLAN, PoE, alimentación, switch, cableado, firewall, servicio o IP incorrecta.
+
+**Mapa lógico** agrupa equipos según el tipo registrado, no indica el cableado físico. El módulo **Informes** genera HTML y CSV del inventario y las pruebas: Reportes/cctv-AAAAMMDD-HHMMSS. Los datos de IP/ubicación pueden ser sensibles; revísalos antes de compartirlos.
+
+**Pruebas automáticas:** la sintaxis, interfaz, validación de catálogo, bloqueo de IP externas, protección básica contra secretos y codificación de HTML se comprueban sin conectar con cámaras ni alterar servicios. Antes de usarse en un cliente hay que realizar pruebas funcionales en equipos y redes autorizados.
 
 ## Diagnóstico inteligente de redes — v1.6
 
