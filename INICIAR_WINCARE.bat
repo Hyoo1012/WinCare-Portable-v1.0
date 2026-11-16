@@ -28,6 +28,12 @@ if not exist "%~dp0AppRecommendations.ps1" (
 if not exist "%~dp0TechToolkit.ps1" (
   echo ADVERTENCIA: falta TechToolkit.ps1. El taller tecnico no estara disponible.
 )
+if not exist "%~dp0NetworkDiagnostics.ps1" (
+  echo ADVERTENCIA: falta NetworkDiagnostics.ps1. Diagnostico inteligente de redes no estara disponible.
+)
+if not exist "%~dp0NetworkDiagnosticsCore.ps1" (
+  echo ADVERTENCIA: falta NetworkDiagnosticsCore.ps1. Pruebas de alcance seguro no disponibles.
+)
 "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File "%~dp0WinCare.ps1"
 if errorlevel 1 pause
 endlocal
