@@ -180,7 +180,7 @@ Abre **06 Soporte PC** en el menú de WinCare. El módulo reúne cuatro seccione
 
 **Errores de Windows:** eventos recientes del registro System relacionados con apagados inesperados y servicios (IDs 41, 6008, 1001, 7000, 7001, 7009, 7023, 7031 y 7034). Consulta hasta 80 eventos de los últimos 14 días. Un evento histórico no confirma un fallo actual; la ausencia de eventos no demuestra que el equipo esté libre de problemas.
 
-**Inicio y servicios:** muestra entradas de inicio con CIM y permite abrir Administrador de tareas y Servicios. No deshabilita aplicaciones o servicios automáticamente.
+**Inicio y servicios:** muestra el último arranque, estados orientativos de servicios importantes (Spooler, Windows Update, BITS, DHCP, DNS Client, EventLog y recurso compartido) y entradas de inicio mediante CIM. Permite abrir Administrador de tareas y Servicios. Un servicio detenido puede iniciarse bajo demanda; no se deshabilitan aplicaciones ni servicios automáticamente.
 
 **Respaldos e intervenciones:** registra el problema, acciones, resultado, cliente y orden de trabajo. Guardar historial solicita confirmación y genera HTML imprimible, JSON y CSV en Reportes/soporte-AAAAMMDD-HHMMSS. Los campos escritos por el técnico se codifican de forma segura en el HTML.
 
