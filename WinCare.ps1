@@ -484,7 +484,7 @@ function Uninstall-Selected {
         $type=if($tab.Text -eq 'Programas'){'Win32'}else{'Appx'}
         $rule=Get-WCPolicyMatch -Rules @(Get-WCPolicyRules) -Type $type -Name $name -Publisher $publisher
         if($rule -and $rule.Recomendacion -eq 'Conservar'){
-            [void][Windows.Forms.MessageBox]::Show(('No se permite quitar '+$name+'. Está marcado como Conservar en el catálogo del técnico.','Regla de protección'),'OK','Warning')
+            [void][Windows.Forms.MessageBox]::Show(('No se permite quitar '+$name+'. Está marcado como Conservar en el catálogo del técnico.'),'Regla de protección','OK','Warning')
             return
         }
     }catch{
