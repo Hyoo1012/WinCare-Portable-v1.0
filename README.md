@@ -1,4 +1,4 @@
-# WinCare Portable v1.3
+# WinCare Portable v1.4
 
 **Diseñado por DevPoderSEO**
 
@@ -85,7 +85,7 @@ En **Hardware y salud**, elige la herramienta en el selector y pulsa **Abrir her
 
 Pulsa **Exportar informe** para guardar los hallazgos en CSV por categoría, dentro de `Reportes/hardware-AAAAMMDD-HHMMSS/` (o Documentos si el USB es de solo lectura). Los reportes pueden incluir nombres del equipo, adaptadores y otros datos técnicos: revísalos antes de compartir.
 
-## Centro de mantenimiento y limpieza segura (v1.3)
+## Centro de mantenimiento y limpieza segura (v1.4)
 
 En la ventana principal pulsa **Mantenimiento**. El módulo es portátil y separa tres pestañas:
 
@@ -95,10 +95,22 @@ Inspección del antivirus/Defender, registro informativo de productos de segurid
 
 ### Limpieza segura
 
-Solo busca archivos con las extensiones **.tmp, .temp, .cache, .bak y .old** dentro de **LOCALAPPDATA\Temp** (más de 7 días) y **Windows\Temp** (más de 14 días; requiere administrador). El escaneo no elimina nada, y muestra ruta, tamaño y fecha de cada candidato.
+La limpieza se realiza **por categoría**, cada una con sus propias condiciones. El selector muestra una categoría a la vez y **Escanear categoría** identifica los candidatos sin borrar ninguno.
 
-- El usuario selecciona los archivos y marca la confirmación de respaldo.
-- Exige confirmación final; si se incluye Windows\Temp, pide una confirmación adicional.
+| Categoría | Archivos permitidos | Antigüedad | Precaución |
+|---|---|---|---|
+| Temporales del usuario | .tmp, .temp, .cache, .bak, .old dentro de LocalAppData\\Temp | 7 días | Algunas aplicaciones pueden necesitar reconstruir temporales |
+| Temporales de Windows | Mismas extensiones dentro de Windows\\Temp | 14 días | Requiere administrador y confirmación adicional |
+| Volcados de errores | .dmp y .mdmp dentro de LocalAppData\\CrashDumps | 30 días | Se perderán evidencias para diagnosticar cierres inesperados |
+| Informes de errores archivados | .wer, .dmp, .mdmp, .hdmp en ProgramData\\Microsoft\\Windows\\WER\\ReportArchive | 45 días | Requiere administrador; conserva informes necesarios para soporte |
+| Caché de miniaturas | thumbcache_*.db dentro del directorio Explorer del usuario | 14 días | Windows puede regenerarla; ficheros en uso se omiten |
+
+**Uso de la limpieza:** selecciona una categoría → **Escanear categoría** → marca archivos o **Seleccionar todos** → marca **He revisado los archivos y tengo respaldo** → **Limpiar seleccionados** → confirma el resumen. El botón se habilita cuando hay archivos seleccionados y, si falta autorización, muestra qué casilla debes marcar. Cambiar de categoría descarta la selección anterior para impedir mezclas.
+
+**No se recomienda seleccionar automáticamente todas las categorías.** Los volcados y reportes de errores pueden ser importantes cuando investigas una avería.
+
+- El usuario selecciona archivos de **una categoría a la vez** y marca explícitamente la confirmación de respaldo.
+- Exige confirmación final; en carpetas de Windows e informes archivados, pide una confirmación adicional.
 - Verifica nuevamente la ubicación autorizada, antigüedad, extensión, tamaño y fechas antes de borrar.
 - Excluye rutas externas, reparse points, junctions y enlaces simbólicos; ignora archivos bloqueados o cambiados desde la vista previa.
 - No elimina carpetas con recursión y no borra archivos ajenos a las extensiones aprobadas.
@@ -110,7 +122,7 @@ El resultado ocupa solamente parte del almacenamiento temporal: no elimina datos
 
 ### Herramientas de mantenimiento
 
-Accesos oficiales a Windows Update, Aplicaciones de inicio, Sensor de almacenamiento, Seguridad de Windows y carpetas de reportes.
+Accesos oficiales a Windows Update, Aplicaciones de inicio, Sensor de almacenamiento, Seguridad de Windows y carpetas de reportes. También incluye **Liberador de espacio**, **Servicios**, **Tareas programadas**, **Visor de eventos**, **msconfig** y **Monitor de recursos** para que el técnico pueda abrir herramientas de Windows rápidamente. Son aplicaciones externas que pueden ofrecer cambios por cuenta propia, no ejecutados automáticamente por WinCare.
 
 - **SFC /verifyonly** y **DISM /Online /Cleanup-Image /ScanHealth** se ejecutan manualmente tras confirmación, en una consola aparte con solicitud UAC. Son verificaciones, no reparaciones.
 - **Vaciar Papelera** es opcional y está separado de la limpieza temporal. Exige doble confirmación explícita. El programa no estima previamente el contenido ni puede garantizar su recuperación.
