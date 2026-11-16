@@ -325,7 +325,7 @@ function Open-WinCareRecommendations {
     }
     try {
         & $path -Owner $form -SuggestedType $type -SuggestedName $name -SuggestedPublisher $publisher
-        Refresh-Inventory
+        if($script:TabControl.SelectedTab){Refresh-Inventory ([string]$script:TabControl.SelectedTab.Text)}
     } catch {
         Write-Audit ('EDITOR RECOMENDACIONES: '+$_.Exception.Message)
         [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir el catálogo','OK','Error')
@@ -381,11 +381,16 @@ function Update-Search {
     } catch { $view.RowFilter = '' }
 }
 
-function Refresh-Inventory {
+function Refresh-Inventory([string]$Category='') {
+    if($Category -and $Category -notin $script:Categories){throw 'Categoría de inventario inválida.'}
     $script:ScanButton.Enabled = $false
-    $script:StatusLabel.Text = 'Analizando Windows... Algunas categorías requieren permisos de administrador.'
+    if($script:ScanAllButton){$script:ScanAllButton.Enabled=$false}
+    $script:StatusLabel.Text = if($Category){'Analizando solo '+$Category+' ...'}else{'Analizando todo el sistema (puede tardar)...'}
     [System.Windows.Forms.Application]::DoEvents()
-    Reset-Inventory
+    if($Category){
+        $script:Tables[$Category].Clear()
+        $script:Warnings.Clear()
+    }else{Reset-Inventory}
     Read-WinCareRules
     $tasks = @(
         @('Apps Store', { Read-AppxInventory }),
@@ -399,6 +404,7 @@ function Refresh-Inventory {
     $hasAdminRights = Test-Administrator
     $requiresAdmin = @('Provisionadas','Características','Capacidades')
     foreach ($task in $tasks) {
+        if($Category -and [string]$task[0] -ne $Category){continue}
         if (-not $hasAdminRights -and [string]$task[0] -in $requiresAdmin) {
             # No lanzar cmdlets DISM que necesariamente darían ERROR_ELEVATION_REQUIRED.
             # Las pestañas quedan vacías, no con mensajes alarmantes de error.
@@ -428,6 +434,7 @@ function Refresh-Inventory {
         $script:StatusLabel.Text += ' Inventario limitado: para completar 3 categorías, pulsa Solicitar permisos.'
     }
     $script:ScanButton.Enabled = $true
+    if($script:ScanAllButton){$script:ScanAllButton.Enabled=$true}
     Update-Search
     Update-Detail
     Write-Audit ('ESCANEO: {0} elementos; {1} advertencias' -f $total,$script:Warnings.Count)
@@ -609,7 +616,7 @@ function Uninstall-Selected {
                 }
             }
         }
-        if($refresh){Refresh-Inventory}
+        if($refresh){Refresh-Inventory ([string]$tab.Text)}
     }catch{
         Write-Audit ('ERROR AL DESINSTALAR '+$name+': '+$_.Exception.Message)
         [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo completar la operación','OK','Warning')
@@ -669,7 +676,7 @@ $form.Controls.Add($brandLabel)
 $script:SubtitleLabel = New-Object System.Windows.Forms.Label
 $script:SubtitleLabel.Location = New-Object System.Drawing.Point(22, 55)
 $script:SubtitleLabel.Size = New-Object System.Drawing.Size(1190, 25)
-$script:SubtitleLabel.Text = 'Soporte, limpieza, redes, CCTV y comprobación integral. Operaciones sensibles solo con autorización.'
+$script:SubtitleLabel.Text = 'Inicio rápido: selecciona una pestaña y pulsa Analizar. Cada módulo ejecuta solo el diagnóstico solicitado.'
 $script:SubtitleLabel.ForeColor = $script:Palette.Muted
 $script:SubtitleLabel.Anchor = 'Top,Left,Right'
 $form.Controls.Add($script:SubtitleLabel)
@@ -684,14 +691,14 @@ $form.Controls.Add($script:SearchBox)
 $script:SearchBox.Add_TextChanged({ Update-Search })
 
 $script:ScanButton = New-Object System.Windows.Forms.Button
-$script:ScanButton.Text = 'Analizar PC'
+$script:ScanButton.Text = 'Analizar pestaña'
 $script:ScanButton.Location = New-Object System.Drawing.Point(384, 102)
 $script:ScanButton.Size = New-Object System.Drawing.Size(146, 33)
 $script:ScanButton.BackColor = $script:Palette.Accent
 $script:ScanButton.ForeColor = [System.Drawing.Color]::White
 $script:ScanButton.FlatStyle = 'Flat'
 $form.Controls.Add($script:ScanButton)
-$script:ScanButton.Add_Click({ Refresh-Inventory })
+$script:ScanButton.Add_Click({ if($script:TabControl.SelectedTab){Refresh-Inventory ([string]$script:TabControl.SelectedTab.Text)} })
 
 $script:AdminButton = New-Object System.Windows.Forms.Button
 $script:AdminButton.Text = 'Solicitar permisos'
@@ -1098,17 +1105,26 @@ $actionBar.Location=New-Object Drawing.Point(20,752)
 $actionBar.Size=New-Object Drawing.Size(1260,42)
 $actionBar.Anchor='Bottom,Left,Right'
 $actionBar.RowCount=1
-$actionBar.ColumnCount=6
-for($n=0;$n -lt 6;$n++){
-    [void]$actionBar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent,[single](100/6))))
+$actionBar.ColumnCount=7
+for($n=0;$n -lt 7;$n++){
+    [void]$actionBar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent,[single](100/7))))
 }
+$script:ScanAllButton=New-Object Windows.Forms.Button
+$script:ScanAllButton.Text='Analizar todo (lento)'
+$script:ScanAllButton.BackColor=[Drawing.Color]::FromArgb(44,69,92)
+$script:ScanAllButton.ForeColor=[Drawing.Color]::White
+$script:ScanAllButton.Add_Click({
+    if([Windows.Forms.MessageBox]::Show('Se consultarán 7 categorías, incluidos servicios, controladores y características del sistema. Puede tardar bastante. ¿Analizar todas ahora?','Inventario completo','YesNo','Question','Button2') -eq [Windows.Forms.DialogResult]::Yes){
+        Refresh-Inventory
+    }
+})
 $script:RemoveButton.Text='Desinstalar seleccionado'
 $windowsBtn.Text='Aplicaciones Windows'
 $restoreBtn.Text='Punto restauración'
 $exportBtn.Text='Exportar inventario'
 $folderBtn.Text='Ver reportes'
 $helpBtn.Text='Ayuda y seguridad'
-$actionButtons=@($script:RemoveButton,$windowsBtn,$restoreBtn,$exportBtn,$folderBtn,$helpBtn)
+$actionButtons=@($script:RemoveButton,$windowsBtn,$restoreBtn,$exportBtn,$folderBtn,$helpBtn,$script:ScanAllButton)
 for($n=0;$n -lt $actionButtons.Count;$n++){
     $button=$actionButtons[$n]
     $form.Controls.Remove($button)
@@ -1157,19 +1173,9 @@ $script:StatusLabel.Text = 'Listo. Modo de solo lectura activado.'
 $form.Controls.Add($script:StatusLabel)
 
 $form.Add_Shown({
-    [System.Windows.Forms.Application]::DoEvents()
-    if (-not (Test-Administrator)) {
-        $message = 'Para consultar todas las aplicaciones aprovisionadas, características y capacidades de Windows, se necesitan permisos de administrador.' +
-            [Environment]::NewLine + [Environment]::NewLine +
-            '¿Quieres reiniciar WinCare con permisos? Windows te pedirá autorización (UAC).' +
-            [Environment]::NewLine + [Environment]::NewLine +
-            'Si eliges No, puedes continuar con el análisis parcial. La desinstalación seguirá desactivada.'
-        $choice = [System.Windows.Forms.MessageBox]::Show($message,'WinCare | Permisos para inventario completo','YesNo','Question','Button2')
-        if ($choice -eq [System.Windows.Forms.DialogResult]::Yes) {
-            if (Request-AdministratorAccess) { return }
-        }
-    }
-    Refresh-Inventory
+    # Inicio inmediato: no leer registros, drivers, Appx, DISM o CIM automáticamente.
+    # La elevación se solicita SOLO al pulsar Solicitar permisos.
+    $script:StatusLabel.Text='Listo. Selecciona una pestaña y pulsa Analizar pestaña. Analizar todo es opcional.'
 })
 if ($SmokeTest) {
     # Prueba segura de inicialización: no muestra la ventana ni ejecuta inventario.
@@ -1193,7 +1199,7 @@ if ($SmokeTest) {
     if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne '01  Hardware y salud') { throw 'Falta Hardware y salud.' }
     if ($null -eq $maintenanceBtn -or $maintenanceBtn.Text -ne '03  Mantenimiento') { throw 'Falta Mantenimiento.' }
     if($navBar.ColumnCount -ne 4 -or $navBar.RowCount -ne 2 -or $navBar.Controls.Count -ne 8){throw 'Navegación de ocho módulos incompleta.'}
-    if($actionBar.ColumnCount -ne 6 -or $actionBar.Controls.Count -ne 6){throw 'Barra de acciones incompleta.'}
+    if($actionBar.ColumnCount -ne 7 -or $actionBar.Controls.Count -ne 7){throw 'Barra de acciones incompleta.'}
     if(-not $technicianBtn -or -not $policyBtn -or -not $supportBtn -or -not $cctvBtn -or -not $steamBtn -or -not $healthBtn){throw 'Faltan accesos a soporte, CCTV, Steam o autodiagnóstico.'}
     # Probar de forma aislada el bloqueo de programas con recomendación Conservar.
     # No se consulta el equipo ni se desinstala software en esta prueba.
@@ -1213,7 +1219,8 @@ if ($SmokeTest) {
     Reset-Inventory
     $script:PolicyRules=@()
     Write-Host 'OK: políticas Conservar bloquean; Opcional no desbloquea componentes del sistema.'
-    Write-Host 'OK: 7 tablas, recomendaciones, 8 módulos (dos filas) y 6 acciones de inventario.'
+    if($script:ScanButton.Text -ne 'Analizar pestaña' -or $script:ScanAllButton.Text -ne 'Analizar todo (lento)'){throw 'Acciones de análisis a demanda faltantes.'}
+    Write-Host 'OK: inventario a demanda por pestaña, análisis global opcional, 8 módulos, 7 acciones.'
     $form.Dispose()
     return
 }
