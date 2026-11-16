@@ -190,6 +190,7 @@ foreach($entry in $labels){
     $caption.Location=New-Object Drawing.Point([int]$entry[1],$(if([string]$entry[0] -eq 'Motivo de la decisión'){96}else{43}))
     $caption.Size=New-Object Drawing.Size([int]$entry[2],18)
     $caption.ForeColor=$script:RColors.Muted
+    if([string]$entry[0] -in @('Fabricante','Recomendación')){$caption.Anchor='Top,Right'}
     $panel.Controls.Add($caption)
 }
 $script:RType=New-Object Windows.Forms.ComboBox
