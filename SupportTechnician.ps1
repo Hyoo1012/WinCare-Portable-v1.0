@@ -419,7 +419,7 @@ if($SafetyTest){
     Write-Host 'OK: HTML escapado, respaldo fuera de Windows, ninguna intervención ejecutada.'
     $script:SForm.Dispose();return
 }
-$script:SForm.Add_Shown({Read-SPrinters})
+$script:SForm.Add_Shown({$script:SStatus.Text='Sin analizar. Elige Revisar impresoras, Consultar eventos o Revisar inicio para iniciar.'})
 try {
     if($Owner -is [Windows.Forms.IWin32Window]){[void]$script:SForm.ShowDialog($Owner)}
     else{[void]$script:SForm.ShowDialog()}
