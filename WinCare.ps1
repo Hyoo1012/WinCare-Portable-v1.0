@@ -669,7 +669,7 @@ $form.Controls.Add($brandLabel)
 $script:SubtitleLabel = New-Object System.Windows.Forms.Label
 $script:SubtitleLabel.Location = New-Object System.Drawing.Point(22, 55)
 $script:SubtitleLabel.Size = New-Object System.Drawing.Size(1190, 25)
-$script:SubtitleLabel.Text = 'Soporte Windows, limpieza, red, impresoras y CCTV. Diagnóstico pasivo y permisos antes de intervenir.'
+$script:SubtitleLabel.Text = 'Soporte, limpieza, redes, CCTV y comprobación integral. Operaciones sensibles solo con autorización.'
 $script:SubtitleLabel.ForeColor = $script:Palette.Muted
 $script:SubtitleLabel.Anchor = 'Top,Left,Right'
 $form.Controls.Add($script:SubtitleLabel)
@@ -1030,6 +1030,21 @@ $cctvBtn.Add_Click({
         [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir CCTV','OK','Error')
     }
 })
+$healthBtn=New-Object System.Windows.Forms.Button
+$healthBtn.Text='08  Verificar WinCare'
+$form.Controls.Add($healthBtn)
+$healthBtn.Add_Click({
+    $module=Join-Path $PSScriptRoot 'WinCareHealth.ps1'
+    if(-not (Test-Path -LiteralPath $module -PathType Leaf)){
+        [void][Windows.Forms.MessageBox]::Show('Falta WinCareHealth.ps1. Descarga el paquete completo.','Verificar instalación','OK','Warning')
+        return
+    }
+    try{ & $module -Owner $form }
+    catch{
+        Write-Audit ('VERIFICAR WINCARE: '+$_.Exception.Message)
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'Autodiagnóstico no disponible','OK','Error')
+    }
+})
 $navBar=New-Object System.Windows.Forms.TableLayoutPanel
 $navBar.Location=New-Object Drawing.Point(20,150)
 $navBar.Size=New-Object Drawing.Size(1260,103)
@@ -1046,7 +1061,7 @@ for($n=0;$n -lt 2;$n++){
 $hardwareBtn.Text='01  Hardware y salud'
 $networkBtn.Text='02  Red e IP'
 $maintenanceBtn.Text='03  Mantenimiento'
-$navButtons=@($hardwareBtn,$networkBtn,$maintenanceBtn,$technicianBtn,$policyBtn,$supportBtn,$cctvBtn)
+$navButtons=@($hardwareBtn,$networkBtn,$maintenanceBtn,$technicianBtn,$policyBtn,$supportBtn,$cctvBtn,$healthBtn)
 for($n=0;$n -lt $navButtons.Count;$n++){
     $button=$navButtons[$n]
     $form.Controls.Remove($button)
@@ -1071,6 +1086,7 @@ $quickTips.SetToolTip($technicianBtn,'Informe HTML para clientes, respaldo de co
 $quickTips.SetToolTip($policyBtn,'Clasificar programas como Conservar u Opcional sin desbloquear componentes del sistema.')
 $quickTips.SetToolTip($supportBtn,'Impresoras, eventos críticos, aplicaciones de inicio, respaldos de configuración y registro de intervenciones.')
 $quickTips.SetToolTip($cctvBtn,'Catálogo seguro de cámaras IP y NVR, mapa lógico, comprobación autorizada de un equipo y reportes.')
+$quickTips.SetToolTip($healthBtn,'Detecta módulos faltantes, errores de configuración, permisos y problemas al guardar reportes.')
 $quickTips.SetToolTip($script:SearchBox,'Buscar aplicaciones, fabricantes, riesgos y recomendaciones.')
 $quickTips.SetToolTip($script:ChangeCheck,'Activa para quitar juegos de Steam, MSI, apps Store y desinstaladores interactivos. Abrir Configuración de Windows no lo requiere.')
 $quickTips.SetToolTip($script:RemoveButton,'Selecciona una aplicación. Para Steam y MSI marca Permitir desinstalación; si el método es Windows abre su lista oficial.')
@@ -1176,9 +1192,9 @@ if ($SmokeTest) {
     }
     if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne '01  Hardware y salud') { throw 'Falta Hardware y salud.' }
     if ($null -eq $maintenanceBtn -or $maintenanceBtn.Text -ne '03  Mantenimiento') { throw 'Falta Mantenimiento.' }
-    if($navBar.ColumnCount -ne 4 -or $navBar.RowCount -ne 2 -or $navBar.Controls.Count -ne 7){throw 'Navegación de siete módulos incompleta.'}
+    if($navBar.ColumnCount -ne 4 -or $navBar.RowCount -ne 2 -or $navBar.Controls.Count -ne 8){throw 'Navegación de ocho módulos incompleta.'}
     if($actionBar.ColumnCount -ne 6 -or $actionBar.Controls.Count -ne 6){throw 'Barra de acciones incompleta.'}
-    if(-not $technicianBtn -or -not $policyBtn -or -not $supportBtn -or -not $cctvBtn -or -not $steamBtn){throw 'Faltan accesos a soporte, CCTV o Steam.'}
+    if(-not $technicianBtn -or -not $policyBtn -or -not $supportBtn -or -not $cctvBtn -or -not $steamBtn -or -not $healthBtn){throw 'Faltan accesos a soporte, CCTV, Steam o autodiagnóstico.'}
     # Probar de forma aislada el bloqueo de programas con recomendación Conservar.
     # No se consulta el equipo ni se desinstala software en esta prueba.
     $script:PolicyLoadOK=$true
@@ -1197,7 +1213,7 @@ if ($SmokeTest) {
     Reset-Inventory
     $script:PolicyRules=@()
     Write-Host 'OK: políticas Conservar bloquean; Opcional no desbloquea componentes del sistema.'
-    Write-Host 'OK: 7 tablas, recomendaciones, 7 módulos (dos filas) y 6 acciones de inventario.'
+    Write-Host 'OK: 7 tablas, recomendaciones, 8 módulos (dos filas) y 6 acciones de inventario.'
     $form.Dispose()
     return
 }
