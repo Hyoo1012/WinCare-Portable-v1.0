@@ -1,4 +1,4 @@
-WINCARE PORTABLE v2.0
+WINCARE PORTABLE v2.1
 DISEÑADO POR DEVPODERSEO
 =======================
 
@@ -32,6 +32,45 @@ DISEÑADO POR DEVPODERSEO
 11. El vaciado de Papelera es una accion separada con doble
     confirmacion; SFC/DISM solo verifican y no reparan.
 12. Exporta informes CSV antes de realizar cambios.
+
+WINCARE v2.1 - ANALISIS BAJO DEMANDA
+- Al abrir WinCare NO se ejecuta el inventario completo.
+- Selecciona Apps Store, Programas, Servicios, etc., y pulsa
+  ANALIZAR PESTANA. "Analizar todo (lento)" queda opcional.
+- Hardware: selecciona seccion y pulsa ANALIZAR SECCION.
+- Mantenimiento, seguridad de red y soporte PC no se analizan
+  al abrir; cada ventana tiene su propio boton de consulta.
+- CCTV carga el catalogo, pero consulta adaptadores SOLO con boton.
+- No es un monitor 24/7: sin agentes/servicios no hay alertas remotas.
+
+CENTRO AVANZADO DE REDES v2.1
+1. Abre 02 RED E IP > CENTRO AVANZADO DE REDES.
+2. Pulsa ANALIZAR ADAPTADORES y elige una interfaz IPv4 privada.
+3. Selecciona RED LOCAL, TOPOLOGIA, RENDIMIENTO, HERRAMIENTAS,
+   WI-FI, APLICACIONES o PROTOCOLOS.
+4. Pulsa ANALIZAR PESTANA para esa seccion, sin analizar las otras.
+5. Para ping, traceroute, DNS, puerto TCP, exploracion Wi-Fi y
+   descubrimiento (maximo 16 IPv4 privadas) marca autorizacion y
+   acepta una segunda confirmacion.
+6. El mapa es LOGICO y estimado, no topologia real L2; la MAC
+   no prueba fabricante ni existencia de intrusos.
+7. Para fabricante, usa Configuracion/fabricantes-oui.csv con
+   contenido por linea HEX6;Fabricante confirmado. No trae OUI externos.
+8. Exporta resultados HTML/CSV. Para PDF, imprime el HTML desde
+   el navegador con Microsoft Print to PDF.
+9. SNMP v1/v2c/v3, NetFlow, sFlow, Syslog continuo, DPI, medicion
+   SNR/heatmaps, alertas SMS/mail, backups autom. de switches y
+   portal web NO ESTAN implementados: requieren servidores/sensores.
+
+VALIDACION LOCAL SEGURA
+- Ejecuta VALIDAR_WINCARE.bat desde Windows para comprobar
+  sintaxis, ventanas y limites basicos SIN escanear redes ni
+  desinstalar, limpiar o reparar.
+- Si falla copia el mensaje de error.
+- Si finaliza bien, NO confirma aun funcionamiento con cada
+  impresora, camara, juego, router ni hardware real.
+- Si los tests GitHub Actions no parten, revisa estado del
+  runner, permisos y facturacion del repositorio.
 
 NUEVO EN WINCARE 2.0
 - Boton 08 VERIFICAR WINCARE: comprueba que todos los archivos
