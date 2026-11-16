@@ -258,10 +258,13 @@ function Inspect-HDetail {
     if ($row.IsNewRow) { return }
     $script:HDetail.Text = ([string]$row.Cells['Componente'].Value)+' · '+([string]$row.Cells['Estado'].Value)+': '+([string]$row.Cells['Detalle'].Value)
 }
-function Refresh-Hardware {
+function Refresh-Hardware([string]$Category='') {
+    if($Category -and $Category -notin $script:HCategories){throw 'Categoría de hardware inválida.'}
     $script:HRefresh.Enabled = $false
+    if($script:HAllButton){$script:HAllButton.Enabled=$false}
     $script:HWarnings.Clear()
-    foreach ($category in $script:HCategories) { $script:HTables[$category].Clear() }
+    if($Category){$script:HTables[$Category].Clear()}
+    else{foreach ($category in $script:HCategories) { $script:HTables[$category].Clear() }}
     $tasks = @(
         @('Resumen',{ Read-HSummary }),
         @('Procesador',{ Read-HProcessor }),
@@ -276,7 +279,7 @@ function Refresh-Hardware {
         @('Incidencias',{ Read-HIssues })
     )
     try {
-        foreach ($task in $tasks) { Invoke-HRead ([string]$task[0]) $task[1] }
+        foreach ($task in $tasks) { if($Category -and [string]$task[0] -ne $Category){continue}; Invoke-HRead ([string]$task[0]) $task[1] }
         Select-HCategory
         $count=0
         $alerts=0
@@ -291,7 +294,7 @@ function Refresh-Hardware {
         if ($script:HWarnings.Count -gt 0) {
             [void][Windows.Forms.MessageBox]::Show(($script:HWarnings -join [Environment]::NewLine),'Información parcial de hardware','OK','Information')
         }
-    } finally { $script:HRefresh.Enabled = $true }
+    } finally { $script:HRefresh.Enabled = $true; if($script:HAllButton){$script:HAllButton.Enabled=$true} }
 }
 function Export-Hardware {
     try {
@@ -384,13 +387,13 @@ $script:HForm.Controls.Add($script:HSearch)
 $script:HSearch.Add_TextChanged({ Set-HFilter })
 
 $script:HRefresh = New-Object Windows.Forms.Button
-$script:HRefresh.Text = 'Actualizar hardware'
+$script:HRefresh.Text = 'Analizar sección'
 $script:HRefresh.Location = New-Object Drawing.Point(255,94)
 $script:HRefresh.Size = New-Object Drawing.Size(155,32)
 $script:HRefresh.BackColor = $script:HColors.Accent
 $script:HRefresh.ForeColor = [Drawing.Color]::White
 $script:HRefresh.FlatStyle = 'Flat'
-$script:HRefresh.Add_Click({ Refresh-Hardware })
+$script:HRefresh.Add_Click({ if($script:HCategoryList.SelectedItem){Refresh-Hardware ([string]$script:HCategoryList.SelectedItem)} })
 $script:HForm.Controls.Add($script:HRefresh)
 
 $script:HUtilities = New-Object Windows.Forms.ComboBox
@@ -413,9 +416,17 @@ $script:HForm.Controls.Add($openTool)
 $exportButton = New-Object Windows.Forms.Button
 $exportButton.Text = 'Exportar informe'
 $exportButton.Location = New-Object Drawing.Point(932,94)
-$exportButton.Size = New-Object Drawing.Size(165,32)
+$exportButton.Size = New-Object Drawing.Size(154,32)
 $exportButton.Add_Click({ Export-Hardware })
 $script:HForm.Controls.Add($exportButton)
+$script:HAllButton=New-Object Windows.Forms.Button
+$script:HAllButton.Text='Todo (lento)'
+$script:HAllButton.Location=New-Object Drawing.Point(1092,94)
+$script:HAllButton.Size=New-Object Drawing.Size(102,32)
+$script:HAllButton.Add_Click({
+    if([Windows.Forms.MessageBox]::Show('Se consultarán todas las 11 secciones de hardware; algunas consultas de dispositivos y discos pueden tardar. ¿Continuar?','Análisis integral','YesNo','Question','Button2') -eq [Windows.Forms.DialogResult]::Yes){Refresh-Hardware}
+})
+$script:HForm.Controls.Add($script:HAllButton)
 
 $script:HCategoryList = New-Object Windows.Forms.ListBox
 $script:HCategoryList.Location = New-Object Drawing.Point(20,146)
@@ -505,11 +516,12 @@ if ($SmokeTest) {
             throw ('Tabla de hardware no inicializada: '+$cat)
         }
     }
-    Write-Host 'OK: interfaz de hardware, 11 categorías y 4 columnas construidas; cero acciones de mantenimiento.'
+    if($script:HRefresh.Text -ne 'Analizar sección' -or -not $script:HAllButton){throw 'Faltan acciones de análisis a demanda.'}
+    Write-Host 'OK: interfaz hardware a demanda, 11 categorías, cuatro columnas y cero consultas automáticas.'
     $script:HForm.Dispose()
     return
 }
-$script:HForm.Add_Shown({ [Windows.Forms.Application]::DoEvents(); Refresh-Hardware })
+$script:HForm.Add_Shown({ $script:HStatus.Text='Listo. Selecciona una sección y pulsa Analizar sección; no se consulta hardware al abrir.' })
 try {
     if ($Owner) { [void]$script:HForm.ShowDialog($Owner) }
     else { [void]$script:HForm.ShowDialog() }
