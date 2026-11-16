@@ -18,6 +18,9 @@ jobs:
       - name: Verificar soporte técnico v1.7 y CCTV v1.8 sin cambios ni tráfico
         shell: powershell
         run: .\tests\ProbarSoporteCCTV.ps1
+      - name: Probar desinstalación Steam, MSI y acciones seguras
+        shell: powershell
+        run: .\tests\ProbarDesinstalacion.ps1
       - name: Probar alcance y seguridad de diagnóstico de redes
         shell: powershell
         run: .\tests\ProbarDiagnosticoRed.ps1
