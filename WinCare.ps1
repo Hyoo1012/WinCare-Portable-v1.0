@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v1.4
+﻿# WinCare Portable - v1.5
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -14,6 +14,7 @@ if ($env:OS -ne 'Windows_NT') { throw 'Este programa solamente funciona en Windo
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
+. (Join-Path $PSScriptRoot 'AppRules.ps1')
 
 $script:Palette = @{
     Bg = [System.Drawing.Color]::FromArgb(17, 24, 35)
@@ -57,6 +58,8 @@ $script:CoreProgramPattern = '(?i)(\bWindows\b|Defender|Security|Antivirus|Firew
 $script:Categories = @('Apps Store', 'Provisionadas', 'Programas', 'Características', 'Capacidades', 'Servicios', 'Controladores')
 $script:Tables = @{}
 $script:Grids = @{}
+$script:PolicyRules = @()
+$script:PolicyLoadOK = $true
 $script:Warnings = New-Object 'System.Collections.Generic.List[string]'
 
 function Test-Administrator {
@@ -115,7 +118,7 @@ function Write-Audit([string]$Message) {
 
 function New-InventoryTable {
     $table = New-Object System.Data.DataTable
-    foreach ($column in @('Tipo','Nombre','Versión','Fabricante','Estado','Riesgo','Acción','Detalle','Clave','DatoExtra')) {
+    foreach ($column in @('Tipo','Nombre','Versión','Fabricante','Estado','Riesgo','Acción','Detalle','Clave','DatoExtra','Recomendación')) {
         [void]$table.Columns.Add($column, [string])
     }
     return ,$table
@@ -133,7 +136,7 @@ function Add-InventoryRecord(
     [string]$Publisher, [string]$State, [string]$Risk, [string]$Action,
     [string]$Detail, [string]$Key, [string]$Extra = ''
 ) {
-    $values = [object[]]@($Type,$Name,$Version,$Publisher,$State,$Risk,$Action,$Detail,$Key,$Extra)
+    $values = [object[]]@($Type,$Name,$Version,$Publisher,$State,$Risk,$Action,$Detail,$Key,$Extra,'Sin clasificar')
     [void]$script:Tables[$Category].Rows.Add($values)
 }
 
@@ -255,8 +258,9 @@ function Update-Detail {
     $risk = [string]$row.Cells['Riesgo'].Value
     $action = [string]$row.Cells['Acción'].Value
     $detail = [string]$row.Cells['Detalle'].Value
+    $recommendation = [string]$row.Cells['Recomendación'].Value
     $script:DetailLabel.Text = ('{0} | Riesgo: {1} | Método: {2}' + [Environment]::NewLine + '{3}') -f $name, $risk, $action, $detail
-    $script:RemoveButton.Enabled = $script:ChangeCheck.Checked -and ($action -in @('Appx','MSI'))
+    $script:RemoveButton.Enabled = $script:ChangeCheck.Checked -and $script:PolicyLoadOK -and ($action -in @('Appx','MSI'))
 }
 
 function Update-Search {
@@ -266,7 +270,7 @@ function Update-Search {
     $search = $search.Replace("'", "''").Replace('[','[[]').Replace(']','[]]').Replace('%','[%]').Replace('*','[*]')
     if ($search.Length -eq 0) { $view.RowFilter = ''; return }
     try {
-        $view.RowFilter = "[Nombre] LIKE '%$search%' OR [Fabricante] LIKE '%$search%' OR [Riesgo] LIKE '%$search%'"
+        $view.RowFilter = "[Nombre] LIKE '%$search%' OR [Fabricante] LIKE '%$search%' OR [Riesgo] LIKE '%$search%' OR [Recomendación] LIKE '%$search%'"
     } catch { $view.RowFilter = '' }
 }
 
@@ -275,6 +279,7 @@ function Refresh-Inventory {
     $script:StatusLabel.Text = 'Analizando Windows... Algunas categorías requieren permisos de administrador.'
     [System.Windows.Forms.Application]::DoEvents()
     Reset-Inventory
+    Read-WinCareRules
     $tasks = @(
         @('Apps Store', { Read-AppxInventory }),
         @('Provisionadas', { Read-ProvisionedInventory }),
@@ -297,6 +302,7 @@ function Refresh-Inventory {
         try { & $task[1] }
         catch { [void]$script:Warnings.Add(([string]$task[0] + ': ' + $_.Exception.Message)) }
     }
+    Apply-WinCareRules
     try {
         $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
         $script:SubtitleLabel.Text = ('{0} | Compilación {1} | Usuario {2} | Administración: {3}' -f $os.Caption,$os.BuildNumber,$env:USERNAME,(Test-Administrator))
@@ -326,7 +332,7 @@ function Export-Inventory {
                 [pscustomobject]@{
                     Tipo = [string]$r['Tipo']; Nombre = [string]$r['Nombre']; Version = [string]$r['Versión']
                     Fabricante = [string]$r['Fabricante']; Estado = [string]$r['Estado']
-                    Riesgo = [string]$r['Riesgo']; Accion = [string]$r['Acción']; Detalle = [string]$r['Detalle']
+                    Riesgo = [string]$r['Riesgo']; Recomendacion = [string]$r['Recomendación']; Accion = [string]$r['Acción']; Detalle = [string]$r['Detalle']
                 }
             }
             if ($null -ne $records -and @($records).Count -gt 0) {
@@ -342,7 +348,7 @@ function Export-Inventory {
                 $records | Export-Csv -LiteralPath (Join-Path $folder $filename) -NoTypeInformation -Encoding UTF8
             }
         }
-        ('WinCare Portable v1.1 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
+        ('WinCare Portable v1.5 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
         Write-Audit ('EXPORTACION: ' + $folder)
         [void][System.Windows.Forms.MessageBox]::Show(('Inventario exportado en:' + [Environment]::NewLine + $folder),'Exportación completada','OK','Information')
         Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $folder + '"')
@@ -373,6 +379,19 @@ function Uninstall-Selected {
     $key = [string]$row.Cells['Clave'].Value
     $extra = [string]$row.Cells['DatoExtra'].Value
     if ($action -notin @('Appx','MSI') -or $risk -eq 'Protegido') { return }
+    # Revalidar configuración antes de cada desinstalación; un fallo cancela.
+    try {
+        $type=if($tab.Text -eq 'Apps Store'){'Appx'}elseif($tab.Text -eq 'Programas'){'Win32'}else{'Otro'}
+        if($type -eq 'Otro'){throw 'Categoría no permitida.'}
+        $rule=Get-WCPolicyMatch -Rules @(Get-WCPolicyRules) -Type $type -Name $name -Publisher ([string]$row.Cells['Fabricante'].Value)
+        if($rule -and $rule.Recomendacion -eq 'Conservar'){
+            [void][Windows.Forms.MessageBox]::Show(('Este programa está marcado como Conservar: '+$name+'. Modifica la regla en Recomendaciones si corresponde.'),'Protegido por el técnico','OK','Warning')
+            return
+        }
+    }catch{
+        [void][Windows.Forms.MessageBox]::Show(('No fue posible verificar las reglas: '+$_.Exception.Message+'. Desinstalación cancelada.'),'Protección de programas','OK','Warning')
+        return
+    }
 
     $message = "¿Confirmas la desinstalación?`r`n`r`nPrograma: $name`r`nRiesgo: $risk`r`nConsecuencia: $detail`r`n`r`nADVERTENCIA: podrías perder configuraciones, archivos propios de la aplicación o funciones dependientes. Esta herramienta NO garantiza reversión. Haz una copia de seguridad antes de continuar.`r`n`r`n¿Continuar?"
     $answer = [System.Windows.Forms.MessageBox]::Show($message,'Confirmar eliminación: posible pérdida de funciones','YesNo','Warning','Button2')
@@ -580,7 +599,7 @@ foreach ($name in $script:Categories) {
     $grid.AlternatingRowsDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(33, 45, 61)
     # Definir columnas antes de asignar DataSource: WinForms puede postergar la autogeneración
     # hasta que el control tenga un BindingContext. Nunca asumir Columns[$name] existente.
-    $weights = @{ 'Nombre'=250; 'Tipo'=100; 'Versión'=100; 'Fabricante'=170; 'Estado'=145; 'Riesgo'=95; 'Acción'=90 }
+    $weights = @{ 'Nombre'=238; 'Tipo'=80; 'Versión'=94; 'Fabricante'=150; 'Estado'=110; 'Riesgo'=89; 'Acción'=78; 'Recomendación'=170 }
     foreach ($dataColumn in $script:Tables[$name].Columns) {
         $columnName = [string]$dataColumn.ColumnName
         $column = New-Object System.Windows.Forms.DataGridViewTextBoxColumn
