@@ -26,6 +26,26 @@ foreach($feature in @('SNMP v1 / v2c / v3','NetFlow / sFlow / IPFIX','DPI / capt
 }
 $html=New-WCProHtmlReport -Devices @([pscustomobject]@{IP='<script>alert(1)</script>';MAC='';Fabricante='';Origen='';Estado='';SO=''}) -Measurements @() -Applications @() -Comment '<img src=x>'
 if($html -match '<script>alert' -or $html -match '<img src=x>' -or $html -notmatch '&lt;script&gt;'){throw 'HTML no protegido.'}
+$temp=Join-Path ([IO.Path]::GetTempPath()) ('WC-Pro-Config-'+[guid]::NewGuid().ToString('N'))
+try{
+ [void](New-Item -Path $temp -ItemType Directory -Force)
+ $cfg=Join-Path $temp 'switch.cfg'
+ Set-Content -LiteralPath $cfg -Encoding UTF8 -Value 'hostname=switch-de-prueba'
+ $fingerprint=Get-WCProConfigFingerprint $cfg
+ if($fingerprint.Hash -notmatch '^[A-Fa-f0-9]{64}
+& (Join-Path $root 'AdvancedNetwork.ps1') -SafetyTest
+Write-Host 'OK: redes avanzadas a demanda, métricas, subredes, restricciones LAN y reportes; sin tráfico.'
+){throw 'No generó SHA256 de configuración.'}
+ $baseline=Join-Path $temp 'config-baselines.json'
+ Save-WCProConfigBaseline $baseline 'switch-de-prueba' $fingerprint
+ $records=@(Read-WCProConfigBaselines $baseline)
+ if($records.Count -ne 1 -or [string]$records[0].SHA256 -ne [string]$fingerprint.Hash){throw 'No guardó referencia SHA256.'}
+ Set-Content -LiteralPath $cfg -Encoding UTF8 -Value 'hostname=switch-modificado'
+ $changed=Get-WCProConfigFingerprint $cfg
+ if($changed.Hash -eq $fingerprint.Hash){throw 'No detectó modificación de archivo.'}
+}finally{
+ Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue
+}
 & (Join-Path $root 'AdvancedNetwork.ps1') -SmokeTest
 & (Join-Path $root 'AdvancedNetwork.ps1') -SafetyTest
 Write-Host 'OK: redes avanzadas a demanda, métricas, subredes, restricciones LAN y reportes; sin tráfico.'
