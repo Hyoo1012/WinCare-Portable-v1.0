@@ -25,4 +25,6 @@ Write-Host 'Probando catálogo y diagnóstico CCTV v1.8 sin tráfico LAN...'
 & (Join-Path $root 'CCTVAudit.ps1') -SmokeTest
 Write-Host 'Probando autodiagnóstico WinCare sin escribir archivos...'
 & (Join-Path $root 'WinCareHealth.ps1') -SmokeTest
-Write-Host 'OK: diez interfaces construidas sin operaciones destructivas ni tráfico.'
+Write-Host 'Probando centro avanzado de redes sin contacto ni consultas...'
+& (Join-Path $root 'AdvancedNetwork.ps1') -SmokeTest
+Write-Host 'OK: once interfaces construidas sin operaciones destructivas ni tráfico.'
