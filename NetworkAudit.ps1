@@ -173,11 +173,13 @@ function Set-NFilter {
     }
     try { $view.RowFilter = $parts -join ' OR ' } catch { $view.RowFilter = '' }
 }
-function Refresh-NInventory {
+function Refresh-NInventory([string]$Category='') {
+    if($Category -and $Category -notin $script:NCategories){throw 'Pestaña de red inválida.'}
     $script:NRefresh.Enabled = $false
     try {
         $script:NWarnings.Clear()
-        foreach ($kind in $script:NCategories) { $script:NTables[$kind].Clear() }
+        if($Category){$script:NTables[$Category].Clear()}
+        else{foreach ($kind in $script:NCategories) { $script:NTables[$kind].Clear() }}
         Read-NKnown
         $tasks = @(
             @('Conexiones TCP y UDP', { Read-NConnections }),
@@ -186,6 +188,7 @@ function Refresh-NInventory {
             @('Firewall', { Read-NFirewall })
         )
         foreach ($task in $tasks) {
+            if($Category -and [string]$task[0] -ne $Category){continue}
             $script:NStatus.Text = 'Consultando ' + [string]$task[0]
             [Windows.Forms.Application]::DoEvents()
             try { & $task[1] } catch { [void]$script:NWarnings.Add(([string]$task[0] + ': ' + $_.Exception.Message)) }
@@ -361,13 +364,13 @@ $script:NSearch.Add_TextChanged({ Set-NFilter })
 $script:NForm.Controls.Add($script:NSearch)
 
 $script:NRefresh = New-Object Windows.Forms.Button
-$script:NRefresh.Text = 'Actualizar red'
+$script:NRefresh.Text = 'Analizar pestaña'
 $script:NRefresh.Location = New-Object Drawing.Point(275,94)
 $script:NRefresh.Size = New-Object Drawing.Size(120,31)
 $script:NRefresh.BackColor = $script:NColors.Accent
 $script:NRefresh.ForeColor = [Drawing.Color]::White
 $script:NRefresh.FlatStyle = 'Flat'
-$script:NRefresh.Add_Click({ Refresh-NInventory })
+$script:NRefresh.Add_Click({ if($script:NTab.SelectedTab){Refresh-NInventory ([string]$script:NTab.SelectedTab.Text)} })
 $script:NForm.Controls.Add($script:NRefresh)
 
 $actions = @(
@@ -467,7 +470,7 @@ $script:NStatus.Size = New-Object Drawing.Size(1160,28)
 $script:NStatus.Anchor = 'Bottom,Left,Right'
 $script:NStatus.ForeColor = $script:NColors.Muted
 $script:NForm.Controls.Add($script:NStatus)
-$script:NForm.Add_Shown({ [Windows.Forms.Application]::DoEvents(); Refresh-NInventory })
+$script:NForm.Add_Shown({$script:NStatus.Text='Sin analizar. Selecciona la pestaña y pulsa Analizar pestaña; no se consulta red al abrir.'})
 if ($SmokeTest) {
     # Prueba de construcción de UI, sin escaneo ni acceso a la red.
     foreach ($category in $script:NCategories) {
@@ -479,7 +482,8 @@ if ($SmokeTest) {
         }
     }
     if($script:NDiagnosticButton.Text -ne 'Abrir diagnóstico inteligente (v1.6)'){throw 'Falta acceso al nuevo diagnóstico.'}
-    Write-Host 'OK: Inicialización de 5 tablas de red y acceso diagnóstico v1.6.'
+    if($script:NRefresh.Text -ne 'Analizar pestaña'){throw 'Falta análisis de red bajo demanda.'}
+    Write-Host 'OK: inventarios de red a demanda y acceso a diagnóstico; sin tráfico automático.'
     $script:NForm.Dispose()
     return
 }
