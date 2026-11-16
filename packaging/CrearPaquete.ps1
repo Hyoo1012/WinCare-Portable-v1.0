@@ -9,7 +9,7 @@ $required=@(
  'WinCare.ps1','DesktopUninstall.ps1','SteamGames.ps1','AppRules.ps1','AppRecommendations.ps1',
  'NetworkAudit.ps1','NetworkDiagnostics.ps1','NetworkDiagnosticsCore.ps1','HardwareAudit.ps1',
  'MaintenanceAudit.ps1','TechToolkit.ps1','SupportTechnician.ps1','CCTVCore.ps1','CCTVAudit.ps1',
- 'WinCareHealth.ps1','AdvancedNetworkCore.ps1','AdvancedNetwork.ps1','INICIAR_WINCARE.bat','LEEME.txt','README.md'
+ 'WinCareHealth.ps1','AdvancedNetworkCore.ps1','AdvancedNetwork.ps1','ValidarWinCare.ps1','VALIDAR_WINCARE.bat','INICIAR_WINCARE.bat','LEEME.txt','README.md'
 )
 $example='Configuracion/recomendaciones.ejemplo.json'
 $ouiExample='Configuracion/fabricantes-oui.ejemplo.csv'
