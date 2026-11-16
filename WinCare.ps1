@@ -242,6 +242,11 @@ function Update-Detail {
     $script:DetailLabel.Text = 'Selecciona un elemento para ver sus consecuencias y el método disponible.'
     $script:RemoveButton.Enabled = $false
     if (-not $script:TabControl.SelectedTab) { return }
+    $selectedCategory = [string]$script:TabControl.SelectedTab.Text
+    if (-not (Test-Administrator) -and $selectedCategory -in @('Provisionadas','Características','Capacidades')) {
+        $script:DetailLabel.Text = 'Esta categoría requiere elevación. Pulsa Solicitar permisos y autoriza UAC para verla. El análisis limitado no provoca cambios.'
+        return
+    }
     $grid = $script:Grids[$script:TabControl.SelectedTab.Text]
     if (-not $grid -or $grid.SelectedRows.Count -eq 0) { return }
     $row = $grid.SelectedRows[0]
