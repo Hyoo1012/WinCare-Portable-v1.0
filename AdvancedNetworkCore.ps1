@@ -75,7 +75,8 @@ function Read-WCProOui([string]$Path){
         if($line -match '^\s*#' -or [string]::IsNullOrWhiteSpace($line)){continue}
         # Archivo deliberadamente sencillo: prefijo hexadecimal de 6 caracteres; nombre.
         if($line -notmatch '^([0-9A-Fa-f]{6});([^;\r\n]{1,120})$'){continue}
-        $result[[string]$matches[1].ToUpperInvariant()]=[string]$matches[2].Trim()
+        $prefix=([string]$matches[1]).ToUpperInvariant()
+        $result[$prefix]=([string]$matches[2]).Trim()
     }
     return $result
 }
