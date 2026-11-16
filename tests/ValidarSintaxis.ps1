@@ -2,7 +2,7 @@
 # Comprobación de sintaxis con el analizador nativo de PowerShell.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$files = @('WinCare.ps1','NetworkAudit.ps1','HardwareAudit.ps1')
+$files = @('WinCare.ps1','NetworkAudit.ps1','HardwareAudit.ps1','MaintenanceAudit.ps1')
 $hasErrors = $false
 foreach ($name in $files) {
     $path = Join-Path $root $name
