@@ -9,4 +9,6 @@ Write-Host 'Iniciando prueba de construccion de WinCare (sin inventario ni desin
 & (Join-Path $root 'WinCare.ps1') -SmokeTest
 Write-Host 'Iniciando prueba de construccion de seguridad de red (sin escaneo ni ping)...'
 & (Join-Path $root 'NetworkAudit.ps1') -SmokeTest
-Write-Host 'OK: Ambas interfaces iniciaron sus tablas de datos sin columnas nulas.'
+Write-Host 'Probando ventana Hardware y salud sin leer ni modificar el equipo...'
+& (Join-Path $root 'HardwareAudit.ps1') -SmokeTest
+Write-Host 'OK: las tres interfaces iniciaron tablas sin columnas nulas.'
