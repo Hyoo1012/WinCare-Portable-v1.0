@@ -947,7 +947,7 @@ if($SafetyTest){
     }
     return
 }
-$script:MForm.Add_Shown({ [Windows.Forms.Application]::DoEvents(); Read-MStatus })
+$script:MForm.Add_Shown({$script:MStatus.Text='Listo. Pulsa Analizar estado o Escanear categoría para iniciar el diagnóstico solicitado.'})
 try {
     if($Owner){[void]$script:MForm.ShowDialog($Owner)}
     else{[void]$script:MForm.ShowDialog()}
