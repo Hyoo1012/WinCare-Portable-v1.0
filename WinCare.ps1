@@ -197,7 +197,11 @@ function Read-ProgramInventory {
                 $risk = 'Revisar'
                 $action = [string]$plan.Method
                 $detail = [string]$plan.Details
-                if ($essential) {
+                if ([string]$p.NoRemove -eq '1') {
+                    $risk = 'Protegido'
+                    $action = 'Bloqueada'
+                    $detail = 'El propio programa indica NoRemove: la desinstalación está restringida. Consulta al fabricante.'
+                } elseif ($essential) {
                     $risk = 'Protegido'
                     $action = 'Bloqueada'
                     $detail = 'Posible dependencia, controlador o software esencial. WinCare no permite eliminarlo.'
@@ -537,7 +541,7 @@ function Uninstall-Selected {
             if([string]$reg.DisplayName -ne $name -or [string]$reg.Publisher -ne $publisher){
                 throw 'La identidad del programa cambió desde el inventario. Se canceló la operación.'
             }
-            if([string]$reg.SystemComponent -eq '1' -or $name -match $script:CoreProgramPattern -or
+            if([string]$reg.SystemComponent -eq '1' -or [string]$reg.NoRemove -eq '1' -or $name -match $script:CoreProgramPattern -or
                 $publisher -match '(?i)^(Microsoft Corporation|Microsoft|Intel Corporation|NVIDIA Corporation|Advanced Micro Devices|Realtek)\s*$'){
                 throw 'Se detectó componente potencialmente esencial. No se desinstalará.'
             }
