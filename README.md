@@ -1,4 +1,4 @@
-# WinCare Portable v1.9
+# WinCare Portable v2.0
 
 **Diseñado por DevPoderSEO**
 
@@ -8,10 +8,10 @@ Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar 
 
 ## Instalar en el USB Ventoy
 
-1. En este repositorio selecciona **Code → Download ZIP**.
+1. En **Actions → Validar PowerShell**, abre la ejecución más reciente con resultado correcto y descarga el artefacto **WinCarePortable-v2.0-USB**. Dentro encontrarás un ZIP preparado para Ventoy. También puedes usar **Code → Download ZIP**, pero incluye archivos de desarrollo.
 2. Descomprime todos los archivos en una misma carpeta, por ejemplo `Ventoy:\Herramientas\WinCarePortable\`.
 3. Arranca Windows normalmente y ejecuta `INICIAR_WINCARE.bat`.
-4. Elige uno de los **siete módulos**: Hardware y salud, Red e IP, Mantenimiento, Taller técnico, Recomendaciones, Soporte PC o CCTV/NVR.
+4. Elige uno de los **ocho módulos**: Hardware y salud, Red e IP, Mantenimiento, Taller técnico, Recomendaciones, Soporte PC, CCTV/NVR o **Verificar WinCare**.
 
 ### Permisos de administrador (UAC)
 
@@ -42,11 +42,32 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | CCTVCore.ps1 | Catálogo portátil validado y reglas de seguridad de dispositivos CCTV |
 | CCTVAudit.ps1 | CCTV v1.8: inventario, mapa lógico y diagnóstico limitado de cámaras/NVR/DVR |
 | DesktopUninstall.ps1 | Desinstalación segura Steam, MSI y asistente interactivo con restricciones |
+| SteamGames.ps1 | Detecta juegos mediante appmanifest en bibliotecas Steam, aunque falten del registro |
+| WinCareHealth.ps1 | Verifica módulos, permisos, reglas y capacidad de guardar informes |
+| packaging/CrearPaquete.ps1 | Genera ZIP, hashes SHA256 y excluye datos privados |
 | `Configuracion/recomendaciones.json` | Se crea al guardar la primera regla y se puede copiar con Ventoy |
 | `INICIAR_WINCARE.bat` | Iniciador local |
 | `LEEME.txt` | Guía rápida |
 | `Red-Confiables.json` | Se genera al registrar equipos de confianza en la misma carpeta o en Reportes |
 | `Reportes/` | Inventarios CSV, registros de auditoría y dispositivos registrados |
+
+## Novedades de estabilidad — v2.0
+
+- **Detección de juegos Steam sin registro:** WinCare revisa hasta 32 bibliotecas locales y hasta 800 manifiestos locales, sin tocar archivos de Steam. Puede detectar Dota 2 y otros juegos aunque no aparezcan en la lista de aplicaciones de Windows. **La desinstalación se realiza mediante Steam con confirmación**, nunca borrando carpetas manualmente. Si se ejecuta con otro usuario administrador, recuerda que las bibliotecas de Steam pueden no ser las mismas.
+- **Verificar WinCare (módulo 08):** informa archivos faltantes, compatibilidad PowerShell 5.1/STA, permisos, carpeta de reportes y estado del catálogo Conservar/Opcional. Exporta CSV sin conexión externa. Un resultado correcto confirma la instalación básica, **no certifica que todos los dispositivos y acciones funcionen**.
+- **ZIP portátil verificado:** GitHub Actions genera WinCarePortable-v2.0.zip después de superar pruebas. Incluye archivos, manuales, ejemplo de recomendaciones, VERSION.txt y SHA256SUMS.txt. **Excluye** Reportes, reglas personales y catálogos CCTV privados.
+- **Compatibilidad Ventoy:** descomprime la carpeta WinCarePortable en la partición de datos del USB, inicia Windows y ejecuta INICIAR_WINCARE.bat. El menú de arranque de Ventoy no ejecuta PS1 o BAT.
+
+### Actualizar desde una versión anterior
+
+1. Guarda copia de Configuracion/recomendaciones.json, Configuracion/cctv-dispositivos.json, Red-Confiables.json y Reportes/ si existen.
+2. Descomprime la versión nueva en **otra carpeta**. Inicia WinCare y abre **08 Verificar WinCare** para comprobar los módulos.
+3. Copia tus reglas y catálogos anteriores solo si deseas conservarlos, comprobando que no sobrescriben archivos recientes. Guarda los reportes en un lugar seguro.
+4. Prueba **03 Mantenimiento → Limpieza segura** primero sin borrar nada y busca Dota 2 en **Programas**. Desinstala solo tras revisar el asistente y tener respaldo.
+
+### Descargar el paquete probado
+
+Abre <https://github.com/Hyoo1012/WinCare-Portable-v1.0/actions>, elige **Validar PowerShell**, entra en la última ejecución **verde** y descarga **WinCarePortable-v2.0-USB** desde *Artifacts*. GitHub entrega un ZIP que contiene el ZIP portátil listo para copiar a Ventoy. Si una ejecución falla, no uses su compilación; consulta el registro de pruebas. Los artefactos de Actions pueden caducar y se regeneran en nuevos cambios.
 
 ## Diagnóstico del sistema
 
@@ -56,7 +77,7 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 - Servicios y controladores instalados.
 - Búsqueda, exportación CSV, registro de auditoría y solicitud de punto de restauración.
 - **Solo lectura por defecto**. La eliminación requiere habilitar los cambios y confirmar cada elemento individualmente.
-- Solo desinstala aplicaciones Appx expresamente permitidas y MSI identificados y validados.
+- Puede gestionar Appx opcionales, MSI por GUID, juegos Steam validados, desinstaladores interactivos firmados y abrir la configuración oficial de Windows cuando corresponde. No usa comandos arbitrarios del registro.
 - Controladores, servicios, Windows Defender, Windows Update y componentes protegidos **nunca se eliminan** desde WinCare.
 
 ## Hardware y salud (similar a msinfo32)
