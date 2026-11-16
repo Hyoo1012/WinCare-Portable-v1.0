@@ -383,6 +383,59 @@ function Export-PReport {
         [void][Windows.Forms.MessageBox]::Show('Informe HTML/CSV guardado. Para PDF abre informe.html e imprime con Microsoft Print to PDF. Los datos IP/MAC pueden ser sensibles.','Informe técnico','OK','Information')
     }catch{Set-PStatus ('Error al guardar informe: '+$_.Exception.Message)}
 }
+function Get-PBaselineFile {
+    $dirs=@(
+        (Join-Path $PSScriptRoot 'Configuracion'),
+        (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WinCarePortable\Configuracion')
+    )
+    foreach($dir in $dirs){
+        $path=Join-Path $dir 'config-baselines.json'
+        if(Test-Path -LiteralPath $path -PathType Leaf){return $path}
+    }
+    foreach($dir in $dirs){
+        try{
+            if(-not (Test-Path -LiteralPath $dir)){[void](New-Item -Path $dir -ItemType Directory -Force -ErrorAction Stop)}
+            $probe=Join-Path $dir ('.check-'+[guid]::NewGuid().ToString('N'))
+            [IO.File]::WriteAllText($probe,'ok')
+            Remove-Item -LiteralPath $probe -Force
+            return (Join-Path $dir 'config-baselines.json')
+        }catch{}
+    }
+    throw 'No existe carpeta escribible para guardar huellas locales.'
+}
+function Run-PConfigFile([bool]$SetBaseline){
+    $name=([string]$script:PConfigName.Text).Trim()
+    if([string]::IsNullOrWhiteSpace($name) -or $name.Length -gt 100){
+        Set-PStatus 'Escribe primero un nombre lógico de equipo de 1 a 100 caracteres.'
+        return
+    }
+    $dialog=New-Object Windows.Forms.OpenFileDialog
+    $dialog.Title='Selecciona la exportación de configuración obtenida legalmente del equipo'
+    $dialog.Filter='Configuración exportada|*.cfg;*.conf;*.txt;*.json;*.ini;*.xml;*.backup|Todos los archivos|*.*'
+    $dialog.Multiselect=$false
+    if($dialog.ShowDialog($script:PForm) -ne [Windows.Forms.DialogResult]::OK){return}
+    try{
+        $fingerprint=Get-WCProConfigFingerprint ([string]$dialog.FileName)
+        $file=Get-PBaselineFile
+        $existing=@(Read-WCProConfigBaselines $file | Where-Object {[string]$_.Nombre -eq $name})
+        $summary=('Equipo: '+$name+[Environment]::NewLine+'Archivo: '+$fingerprint.Name+[Environment]::NewLine+'SHA256: '+$fingerprint.Hash+[Environment]::NewLine)
+        if($SetBaseline){
+            if([Windows.Forms.MessageBox]::Show(('Solo guardarás el HASH del archivo; no es un respaldo ni se accede al dispositivo.'+[Environment]::NewLine+'Confirma con el responsable que la configuración es correcta. Reemplazar una referencia previa podría ocultar cambios no autorizados. ¿Guardar huella de '+$name+'?'),'Confirmar nueva referencia','YesNo','Warning','Button2') -ne [Windows.Forms.DialogResult]::Yes){return}
+            Save-WCProConfigBaseline $file $name $fingerprint
+            $summary+='Referencia SHA256 guardada. NO se copió el contenido de la configuración.'
+        }elseif($existing.Count -eq 0){
+            $summary+='No existe referencia guardada. Primero confirma y guarda una huella de una configuración conocida.'
+        }elseif([string]$existing[0].SHA256 -eq [string]$fingerprint.Hash){
+            $summary+='COINCIDE con la referencia local. Esto no prueba seguridad ni configuración óptima.'
+        }else{
+            $summary+='CAMBIO DETECTADO frente a la referencia. Valida el cambio con el administrador; no implica intrusión.'
+        }
+        $script:PConfigLog.Text=$summary
+        Set-PStatus ('Comparación manual SHA256 finalizada para '+$name+'. Sin conexiones, credenciales ni cambios de red.')
+    }catch{
+        Set-PStatus ('Error al verificar exportación: '+$_.Exception.Message)
+    }
+}
 function Analyze-PSelected {
     if($script:PBusy){return}
     switch([string]$script:PTabs.SelectedTab.Text){
@@ -393,6 +446,7 @@ function Analyze-PSelected {
         'Wi-Fi' {Read-PWifi}
         'Aplicaciones' {Read-PFlows}
         'Protocolos' {Read-PProtocols}
+        'Configuraciones' {Run-PConfigFile $false}
     }
 }
 $script:PForm=New-Object Windows.Forms.Form
@@ -442,7 +496,7 @@ $script:PTabs.Size=New-Object Drawing.Size(1171,557)
 $script:PTabs.Anchor='Top,Bottom,Left,Right'
 $script:PForm.Controls.Add($script:PTabs)
 $pages=@{}
-foreach($name in @('Red local','Topología','Rendimiento','Herramientas','Wi-Fi','Aplicaciones','Protocolos')){
+foreach($name in @('Red local','Topología','Rendimiento','Herramientas','Wi-Fi','Aplicaciones','Protocolos','Configuraciones')){
     $page=New-Object Windows.Forms.TabPage
     $page.Text=$name;$page.BackColor=$script:PPanel
     [void]$script:PTabs.TabPages.Add($page);$pages[$name]=$page
@@ -545,6 +599,47 @@ $protocolNote=New-Object Windows.Forms.Label
 $protocolNote.Dock='Top';$protocolNote.Height=38;$protocolNote.ForeColor=$script:PWarn
 $protocolNote.Text='Matriz de capacidades: los colectores, sensores, SNMPv3, DPI, nube y alertas externas no están incluidos.'
 $pages['Protocolos'].Controls.Add($protocolNote);$protocolNote.BringToFront()
+$configTitle=New-Object Windows.Forms.Label
+$configTitle.Text='Huellas de configuraciones exportadas (comparación manual)'
+$configTitle.Font=New-Object Drawing.Font('Segoe UI Semibold',14,[Drawing.FontStyle]::Bold)
+$configTitle.Location=New-Object Drawing.Point(22,22)
+$configTitle.Size=New-Object Drawing.Size(900,36)
+$pages['Configuraciones'].Controls.Add($configTitle)
+$configHelp=New-Object Windows.Forms.Label
+$configHelp.Text='Primero exporta la configuración con la herramienta autorizada del fabricante. Aquí solo se calcula y guarda SHA256, NO el archivo ni claves.'+[Environment]::NewLine+
+ 'Puedes guardar una referencia aprobada y comparar exportaciones posteriores. Un cambio no demuestra intrusión. No hay respaldo remoto automático.'
+$configHelp.ForeColor=$script:PWarn
+$configHelp.Location=New-Object Drawing.Point(24,70)
+$configHelp.Size=New-Object Drawing.Size(1090,60)
+$pages['Configuraciones'].Controls.Add($configHelp)
+$configNameLabel=New-Object Windows.Forms.Label
+$configNameLabel.Text='Nombre lógico del equipo (por ejemplo: switch-sede-1)'
+$configNameLabel.Location=New-Object Drawing.Point(24,155)
+$configNameLabel.Size=New-Object Drawing.Size(500,26)
+$pages['Configuraciones'].Controls.Add($configNameLabel)
+$script:PConfigName=New-Object Windows.Forms.TextBox
+$script:PConfigName.Location=New-Object Drawing.Point(25,186)
+$script:PConfigName.Size=New-Object Drawing.Size(470,29)
+$pages['Configuraciones'].Controls.Add($script:PConfigName)
+$configCompare=New-Object Windows.Forms.Button
+$configCompare.Text='Analizar archivo / comparar SHA256'
+$configCompare.Location=New-Object Drawing.Point(505,185)
+$configCompare.Size=New-Object Drawing.Size(275,34)
+$configCompare.Add_Click({Run-PConfigFile $false})
+$pages['Configuraciones'].Controls.Add($configCompare)
+$configSave=New-Object Windows.Forms.Button
+$configSave.Text='Guardar referencia aprobada'
+$configSave.Location=New-Object Drawing.Point(790,185)
+$configSave.Size=New-Object Drawing.Size(256,34)
+$configSave.Add_Click({Run-PConfigFile $true})
+$pages['Configuraciones'].Controls.Add($configSave)
+$script:PConfigLog=New-Object Windows.Forms.TextBox
+$script:PConfigLog.Location=New-Object Drawing.Point(25,248)
+$script:PConfigLog.Size=New-Object Drawing.Size(1060,190)
+$script:PConfigLog.Anchor='Top,Bottom,Left,Right'
+$script:PConfigLog.ReadOnly=$true;$script:PConfigLog.Multiline=$true;$script:PConfigLog.ScrollBars='Vertical'
+$script:PConfigLog.BackColor=$script:PPanel;$script:PConfigLog.ForeColor=$script:PText
+$pages['Configuraciones'].Controls.Add($script:PConfigLog)
 $script:PStatus=New-Object Windows.Forms.Label
 $script:PStatus.Location=New-Object Drawing.Point(23,715);$script:PStatus.Size=New-Object Drawing.Size(1162,42)
 $script:PStatus.Anchor='Bottom,Left,Right'
@@ -552,10 +647,10 @@ $script:PStatus.ForeColor=$script:PWarn
 $script:PStatus.Text='Sin analizar. Ninguna consulta ni prueba de red iniciada.'
 $script:PForm.Controls.Add($script:PStatus)
 if($SmokeTest){
-    if($script:PTabs.TabPages.Count -ne 7 -or $script:PConsent.Checked){throw 'Pestañas incompletas o consentimiento activo por defecto.'}
+    if($script:PTabs.TabPages.Count -ne 8 -or $script:PConsent.Checked){throw 'Pestañas incompletas o consentimiento activo por defecto.'}
     if($script:PDevices.Rows.Count -or $script:PMetrics.Rows.Count -or $script:PFlows.Rows.Count){throw 'Se ejecutó diagnóstico sin clic.'}
     if($devicesGrid.Columns.Count -ne 7){throw 'Falta estado de confianza del equipo.'}
-    Write-Host 'OK: siete pestañas de redes avanzadas sin tráfico ni consultas automáticas.'
+    Write-Host 'OK: ocho pestañas de redes avanzadas, huellas manuales y sin tráfico automático.'
     $script:PForm.Dispose();return
 }
 if($SafetyTest){
