@@ -13,6 +13,16 @@ Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar 
 3. Arranca Windows normalmente y ejecuta `INICIAR_WINCARE.bat`.
 4. En la ventana principal pulsa **Analizar PC**, o **Seguridad de red e IP** para abrir el diagnóstico de red.
 
+### Permisos de administrador (UAC)
+
+Al abrir WinCare sin elevación, aparecerá una pregunta para **reiniciar WinCare como administrador**. Si aceptas, se muestra el **aviso UAC oficial de Windows**, que debes autorizar personalmente; WinCare no evade la protección de Windows. La ventana sin privilegios se cierra después de abrir la elevada.
+
+Si cancelas o rechazas, WinCare continúa con el inventario **limitado**, sin detenerse ni mostrar como errores las categorías que Windows no permite consultar. Las pestañas **Provisionadas**, **Características** y **Capacidades** necesitan elevación; el botón **Solicitar permisos** permanece disponible para pedirla más tarde. En modo administrador aparece **Admin activo**.
+
+El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario marcar **Habilitar desinstalación** y confirmar cada operación. Si Windows solicita credenciales de **otra cuenta de administrador**, las aplicaciones Appx por usuario se mostrarán para esa cuenta, no para el usuario estándar original.
+
+**Solución manual alternativa:** clic derecho en `INICIAR_WINCARE.bat` → **Ejecutar como administrador**.
+
 **Ventoy no arranca scripts .ps1 ni .bat directamente desde su menú de arranque.** WinCare se ejecuta dentro de una instalación de Windows. No requiere instalador ni altera de forma permanente la política de ejecución de PowerShell.
 
 ### Archivos
