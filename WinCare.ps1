@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v1.9
+﻿# WinCare Portable - v2.0
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -16,6 +16,7 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 . (Join-Path $PSScriptRoot 'AppRules.ps1')
 . (Join-Path $PSScriptRoot 'DesktopUninstall.ps1')
+. (Join-Path $PSScriptRoot 'SteamGames.ps1')
 
 $script:Palette = @{
     Bg = [System.Drawing.Color]::FromArgb(17, 24, 35)
@@ -214,6 +215,24 @@ function Read-ProgramInventory {
                 # Un elemento de registro ilegible no debe detener el inventario.
             }
         }
+    }
+    Read-SteamGamesInventory
+}
+
+function Read-SteamGamesInventory {
+    # Algunos juegos están en las bibliotecas de Steam pero no en el registro de Windows.
+    # Solo se leen appmanifest_*.acf; WinCare nunca modifica los manifiestos.
+    $existing=@{}
+    foreach($record in $script:Tables['Programas'].Rows){
+        $existing[[string]$record['Clave']]=$true
+    }
+    $libraries=@(Get-WCSteamLibraries)
+    if($libraries.Count -eq 0){return}
+    foreach($game in @(Get-WCSteamGamesFromLibraries -Libraries $libraries)){
+        $key='Steam App '+[string]$game.AppId
+        if($existing.ContainsKey($key)){continue}
+        Add-InventoryRecord 'Programas' 'Juego Steam' ([string]$game.Name) '' 'Steam (biblioteca)' 'Instalado según manifiesto Steam' 'Medio' 'Steam' 'Se abrirá Steam para confirmar la eliminación del juego. No se borran carpetas manualmente; algunas partidas podrían guardarse localmente.' $key ([string]$game.ManifestPath)
+        $existing[$key]=$true
     }
 }
 
@@ -443,7 +462,7 @@ function Export-Inventory {
                 $records | Export-Csv -LiteralPath (Join-Path $folder $filename) -NoTypeInformation -Encoding UTF8
             }
         }
-        ('WinCare Portable v1.9 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
+        ('WinCare Portable v2.0 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
         Write-Audit ('EXPORTACION: ' + $folder)
         [void][System.Windows.Forms.MessageBox]::Show(('Inventario exportado en:' + [Environment]::NewLine + $folder),'Exportación completada','OK','Information')
         Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $folder + '"')
@@ -534,6 +553,16 @@ function Uninstall-Selected {
                 [void][Windows.Forms.MessageBox]::Show(('Se abrió Aplicaciones instaladas de Windows. Busca «'+$name+'», selecciona Desinstalar y confirma en Windows. Al terminar pulsa Analizar PC.'),'Desinstalación desde Windows','OK','Information')
                 return
             }
+            if($action -eq 'Steam' -and [string]$row.Cells['Tipo'].Value -eq 'Juego Steam'){
+                $game=Get-WCSteamGameFromManifest -Path $extra
+                if($null -eq $game -or ('Steam App '+$game.AppId) -ne $key -or $game.Name -ne $name){
+                    throw 'El manifiesto Steam cambió o dejó de existir. Vuelve a analizar el PC.'
+                }
+                Start-WCSteamUninstall ([string]$game.AppId)
+                Write-Audit ('STEAM SOLICITADO DESDE BIBLIOTECA: '+$name+'; AppId='+$game.AppId)
+                [void][Windows.Forms.MessageBox]::Show(('Se abrió Steam para confirmar la desinstalación de '+$name+'. Termina allí el proceso y vuelve a Analizar PC. No se eliminaron carpetas directamente.'),'Asistente Steam','OK','Information')
+                return
+            }
             if(-not (Test-Path -LiteralPath $extra)){
                 throw 'La entrada de desinstalación no existe. Actualiza el inventario.'
             }
@@ -612,7 +641,7 @@ function Request-RestorePoint {
 
 # ---- Interfaz portátil WinForms ----
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'WinCare Portable v1.9 | Soporte PC, Redes y CCTV | DevPoderSEO'
+$form.Text = 'WinCare Portable v2.0 | Soporte PC, Redes y CCTV | DevPoderSEO'
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
 $form.Size = New-Object System.Drawing.Size(1340, 885)
 $form.MinimumSize = New-Object System.Drawing.Size(1185, 790)
@@ -871,7 +900,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.9 - Diseñado por DevPoderSEO
+WinCare Portable v2.0 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Permite quitar Appx opcionales, MSI validados, juegos Steam registrados y algunos asistentes interactivos comprobados.
