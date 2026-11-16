@@ -5,11 +5,13 @@ on:
     branches: [main]
   pull_request:
 jobs:
-  sintaxis:
+  sintaxis-y-interfaz:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Revisar sintaxis con Windows PowerShell 5.1
+      - name: Validar sintaxis con Windows PowerShell 5.1
         shell: powershell
-        run: |
-          .\tests\ValidarSintaxis.ps1
+        run: .\tests\ValidarSintaxis.ps1
+      - name: Probar tablas de interfaz sin cambiar Windows
+        shell: powershell
+        run: .\tests\ProbarInterfaz.ps1
