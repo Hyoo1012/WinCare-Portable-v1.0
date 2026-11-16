@@ -640,7 +640,22 @@ if($SafetyTest){
         $f2.LastWriteTimeUtc=[datetime]::UtcNow.AddDays(-20)
         $f2=Get-Item -LiteralPath $badExtension
         if(Test-MCandidate $f2 $testRoot ([datetime]::UtcNow.AddDays(-7))){throw 'Falla bloqueo extensión .exe.'}
-        Write-Host 'OK: ruta interna aprobada, externa bloqueada, .tmp antiguo permitido, .exe bloqueado. Ninguna limpieza ejecutada.'
+        # Simular la exploración completa sobre una carpeta temporal aislada.
+        $script:MRoots=@([pscustomobject]@{Code='Usuario';Root=$testRoot;Days=7;Admin=$false})
+        Find-MCandidates $testRoot 7 'Usuario'
+        if($script:MFiles.Count -ne 1){throw ('Falla escaneo: se esperó 1 .tmp y hubo '+$script:MFiles.Count)}
+        if($script:MCandidates.Rows.Count -ne 1){throw 'Falla tabla de vista previa.'}
+        $candidate=@($script:MFiles.Values)[0]
+        if(-not (Test-MRevalidate $candidate)){throw 'Falla revalidación de candidato sin cambios.'}
+        # Validar las raíces reales de Windows, sin escanear ni eliminar ningún archivo.
+        $roots=@(Get-MRoots)
+        if($roots.Count -eq 0){throw 'No se detectó ninguna raíz temporal de Windows.'}
+        foreach($entry in $roots) {
+            if($null -eq $entry.Root -or $entry.Code -notin @('Usuario','Windows')) {
+                throw 'Raíz temporal devuelta con formato incorrecto.'
+            }
+        }
+        Write-Host 'OK: selección de raíces, ruta externa bloqueada, .exe excluido, escaneo aislado, vista previa y revalidación. Ninguna limpieza real ejecutada.'
     } finally {
         Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
         $script:MForm.Dispose()
