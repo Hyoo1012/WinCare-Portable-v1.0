@@ -23,4 +23,6 @@ Write-Host 'Probando soporte PC v1.7 sin alterar servicio de impresión...'
 & (Join-Path $root 'SupportTechnician.ps1') -SmokeTest
 Write-Host 'Probando catálogo y diagnóstico CCTV v1.8 sin tráfico LAN...'
 & (Join-Path $root 'CCTVAudit.ps1') -SmokeTest
-Write-Host 'OK: nueve interfaces construidas sin operaciones destructivas ni tráfico.'
+Write-Host 'Probando autodiagnóstico WinCare sin escribir archivos...'
+& (Join-Path $root 'WinCareHealth.ps1') -SmokeTest
+Write-Host 'OK: diez interfaces construidas sin operaciones destructivas ni tráfico.'
