@@ -1,17 +1,29 @@
-WINCARE PORTABLE v1.0
-=====================
-Requisitos: Windows 10/11; Windows PowerShell 5.1.
-1. Copia los archivos de este repositorio a tu USB Ventoy en Herramientas\WinCarePortable.
-2. Arranca Windows normalmente y ejecuta INICIAR_WINCARE.bat.
-3. Analiza aplicaciones, servicios, controladores y componentes del sistema.
-4. Exporta informes antes de realizar cambios.
-5. La desinstalacion esta deshabilitada de forma predeterminada; confirma cada accion.
+WINCARE PORTABLE v1.1
+DISEÑADO POR DEVPODERSEO
+=======================
 
-ADVERTENCIA: desinstalar puede afectar aplicaciones, configuraciones o funciones.
-La herramienta no garantiza reversion. Respalda tus datos.
-Solo se permite quitar aplicaciones Appx opcionales conocidas y MSI verificados.
-No se eliminan servicios, controladores, Defender, Windows Update ni otros
-componentes esenciales. El punto de restauracion es opcional y depende de Windows.
+1. Descarga todos los archivos desde GitHub (Code > Download ZIP).
+2. Descomprime en Ventoy:\Herramientas\WinCarePortable\
+3. Inicia Windows normalmente y ejecuta INICIAR_WINCARE.bat.
+4. Pulsa ANALIZAR PC para inventario del sistema.
+5. Pulsa SEGURIDAD DE RED E IP para ver conexiones TCP/UDP, procesos,
+   equipos en caché ARP/ND, IP, DNS, gateway y perfiles de firewall.
+6. Exporta informes CSV antes de realizar cambios.
+7. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
+   con habilitación y confirmación. No hay eliminaciones masivas.
 
-Esta herramienta no arranca desde el menu Ventoy; se usa dentro de Windows.
-Consulta README.md para detalles.
+ADVERTENCIAS
+- Una IP o un proceso desconocido NO significa intruso ni malware.
+- Una firma válida NO garantiza que un proceso sea seguro.
+- La lista de dispositivos LAN no reemplaza la lista del router.
+- Verificación IP: solo envía ping si se confirma expresamente.
+- IP pública: consulta api.ipify.org solo después de confirmar.
+- No hay bloqueo automático, escaneo masivo ni monitoreo continuo.
+- Eliminar aplicaciones podría romper funciones o borrar configuraciones.
+- Respaldar datos antes de intervenir equipos.
+
+Los reportes se guardan localmente en Reportes o Documentos.
+No se ejecuta desde el menú de arranque de Ventoy.
+Más información en README.md.
+
+DISEÑADO POR DEVPODERSEO
