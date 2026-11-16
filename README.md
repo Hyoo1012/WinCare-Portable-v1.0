@@ -1,8 +1,8 @@
-# WinCare Portable v1.1
+# WinCare Portable v1.2
 
 **Diseñado por DevPoderSEO**
 
-Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar aplicaciones y componentes, y revisar conexiones de red con una interfaz WinForms basada en Windows PowerShell 5.1.
+Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar aplicaciones y componentes, consultar hardware/salud del equipo y revisar conexiones de red con una interfaz WinForms basada en Windows PowerShell 5.1.
 
 > **Advertencia importante:** las alertas y etiquetas de riesgo son orientativas. Una IP, proceso o dispositivo desconocido **no demuestra** que exista un intruso. Una firma digital válida **no garantiza** que una aplicación sea segura.
 
@@ -11,7 +11,7 @@ Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar 
 1. En este repositorio selecciona **Code → Download ZIP**.
 2. Descomprime todos los archivos en una misma carpeta, por ejemplo `Ventoy:\Herramientas\WinCarePortable\`.
 3. Arranca Windows normalmente y ejecuta `INICIAR_WINCARE.bat`.
-4. En la ventana principal pulsa **Analizar PC**, o **Seguridad de red e IP** para abrir el diagnóstico de red.
+4. En la ventana principal pulsa **Analizar PC**, **Seguridad de red e IP** o **Hardware y salud** para abrir el módulo deseado.
 
 ### Permisos de administrador (UAC)
 
@@ -31,6 +31,7 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 |---|---|
 | `WinCare.ps1` | Inventario del sistema e interfaz principal |
 | `NetworkAudit.ps1` | Diagnóstico de conexiones y seguridad de red (solo lectura) |
+| `HardwareAudit.ps1` | Inventario de componentes, estado de discos, dispositivos y accesos a herramientas de Windows (solo lectura) |
 | `INICIAR_WINCARE.bat` | Iniciador local |
 | `LEEME.txt` | Guía rápida |
 | `Red-Confiables.json` | Se genera al registrar equipos de confianza en la misma carpeta o en Reportes |
@@ -46,6 +47,42 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 - **Solo lectura por defecto**. La eliminación requiere habilitar los cambios y confirmar cada elemento individualmente.
 - Solo desinstala aplicaciones Appx expresamente permitidas y MSI identificados y validados.
 - Controladores, servicios, Windows Defender, Windows Update y componentes protegidos **nunca se eliminan** desde WinCare.
+
+## Hardware y salud (similar a msinfo32)
+
+Pulsa **Hardware y salud** en la ventana principal. El inventario se organiza en once secciones: **Resumen, Procesador, Memoria RAM, Placa y BIOS, Discos, Unidades, Gráficos, Red, Batería, Dispositivos e Incidencias**.
+
+- **Procesador**: modelo, fabricante, núcleos, hilos, frecuencia indicada por firmware y cachés.
+- **Memoria**: capacidad total, módulos, ranuras reportadas, velocidad y fabricante cuando SMBIOS proporciona esos datos.
+- **Placa/BIOS**: fabricante, modelo y versión de firmware; estado consultable de Secure Boot y TPM.
+- **Discos y unidades**: capacidad, tipo, estado reportado, espacio libre. Temperatura, horas y contadores de fiabilidad solo si los proporciona el hardware y los controladores.
+- **Gráficos**: GPU, versión de controlador y resolución cuando están disponibles.
+- **Red**: adaptadores, estado y velocidad reportada.
+- **Batería**: detección y carga estimada en portátiles compatibles.
+- **Dispositivos**: inventario Plug and Play y códigos del Administrador de dispositivos.
+- **Incidencias**: dispositivos con códigos no cero y hasta 20 eventos críticos/de error registrados en el sistema en los últimos 7 días; son hechos históricos para revisar, no diagnósticos definitivos.
+
+La herramienta conserva el **modo solo lectura**; no ejecuta pruebas de estrés, no cambia BIOS, no actualiza firmware, no instala drivers ni modifica particiones. En unidades con poca capacidad libre o estado de salud no normal, recomienda revisión; **no garantiza detectar fallos inminentes**. Algunos discos no exponen SMART/temperatura. En Windows la información de WMI/CIM depende del fabricante y puede ser parcial o inexacta.
+
+### Herramientas Windows incluidas
+
+En **Hardware y salud**, elige la herramienta en el selector y pulsa **Abrir herramienta**:
+
+| Herramienta | Función |
+|---|---|
+| Información del sistema (`msinfo32`) | Detalle completo de componentes e información del sistema |
+| Diagnóstico DirectX (`dxdiag`) | Video, audio, DirectX y controladores |
+| Administrador de dispositivos (`devmgmt.msc`) | Revisar componentes y controladores |
+| Monitor de recursos (`resmon`) | CPU, memoria, disco y red en tiempo real |
+| Monitor de rendimiento (`perfmon`) | Contadores y rendimiento |
+| Visor de eventos (`eventvwr.msc`) | Errores y eventos del sistema |
+| Monitor de confiabilidad (`perfmon /rel`) | Historial de errores y estabilidad |
+| Administrador de tareas (`taskmgr`) | Procesos y consumo |
+| Administración de discos (`diskmgmt.msc`) | Acceso con advertencia a una herramienta que puede modificar discos |
+
+**Precaución:** WinCare únicamente abre estas herramientas. Algunas permiten cambios importantes por cuenta propia; administrar particiones sin un respaldo puede causar pérdida de datos.
+
+Pulsa **Exportar informe** para guardar los hallazgos en CSV por categoría, dentro de `Reportes/hardware-AAAAMMDD-HHMMSS/` (o Documentos si el USB es de solo lectura). Los reportes pueden incluir nombres del equipo, adaptadores y otros datos técnicos: revísalos antes de compartir.
 
 ## Seguridad de red e IP
 
@@ -86,7 +123,7 @@ La recolección y los CSV pueden contener información sensible: IP, procesos y 
 
 ## Estado de pruebas
 
-Se han revisado los archivos y agregado una verificación automática de sintaxis; **es imprescindible ejecutar pruebas funcionales en Windows 10/11**, especialmente antes de utilizar la desinstalación en equipos de producción. El botón de red no modifica el sistema, salvo los archivos locales que el usuario decide guardar.
+El proyecto incorpora validación automática de sintaxis y pruebas de construcción de interfaces en GitHub Actions. **Faltan pruebas funcionales con hardware real en Windows 10/11**, especialmente antes de utilizar desinstalaciones en producción. El módulo de hardware solo consulta el sistema y abre herramientas elegidas expresamente; los reportes se guardan localmente cuando se solicita exportación.
 
 ---
 
