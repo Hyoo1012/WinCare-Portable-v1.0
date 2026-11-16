@@ -1,4 +1,4 @@
-# WinCare Portable v2.0
+# WinCare Portable v2.1
 
 **Diseñado por DevPoderSEO**
 
@@ -8,7 +8,7 @@ Utilidad portátil en español para **diagnosticar Windows 10/11**, inventariar 
 
 ## Instalar en el USB Ventoy
 
-1. En **Actions → Validar PowerShell**, abre la ejecución más reciente con resultado correcto y descarga el artefacto **WinCarePortable-v2.0-USB**. Dentro encontrarás un ZIP preparado para Ventoy. También puedes usar **Code → Download ZIP**, pero incluye archivos de desarrollo.
+1. En **Actions → Validar PowerShell**, abre la ejecución más reciente con resultado correcto y descarga el artefacto **WinCarePortable-v2.1-USB**. Dentro encontrarás un ZIP preparado para Ventoy. También puedes usar **Code → Download ZIP**, pero incluye archivos de desarrollo.
 2. Descomprime todos los archivos en una misma carpeta, por ejemplo `Ventoy:\Herramientas\WinCarePortable\`.
 3. Arranca Windows normalmente y ejecuta `INICIAR_WINCARE.bat`.
 4. Elige uno de los **ocho módulos**: Hardware y salud, Red e IP, Mantenimiento, Taller técnico, Recomendaciones, Soporte PC, CCTV/NVR o **Verificar WinCare**.
@@ -44,6 +44,9 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | DesktopUninstall.ps1 | Desinstalación segura Steam, MSI y asistente interactivo con restricciones |
 | SteamGames.ps1 | Detecta juegos mediante appmanifest en bibliotecas Steam, aunque falten del registro |
 | WinCareHealth.ps1 | Verifica módulos, permisos, reglas y capacidad de guardar informes |
+| AdvancedNetworkCore.ps1 | Valida subredes, estadísticas, OUI, capacidades y HTML seguro de redes |
+| AdvancedNetwork.ps1 | Centro avanzado por demanda: LAN, topología lógica, latencia/jitter, Wi-Fi, herramientas y reportes |
+| Configuracion/fabricantes-oui.ejemplo.csv | Formato de catálogo OUI local que puedes completar manualmente |
 | packaging/CrearPaquete.ps1 | Genera ZIP, hashes SHA256 y excluye datos privados |
 | `Configuracion/recomendaciones.json` | Se crea al guardar la primera regla y se puede copiar con Ventoy |
 | `INICIAR_WINCARE.bat` | Iniciador local |
@@ -51,11 +54,56 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | `Red-Confiables.json` | Se genera al registrar equipos de confianza en la misma carpeta o en Reportes |
 | `Reportes/` | Inventarios CSV, registros de auditoría y dispositivos registrados |
 
+## Redes avanzadas y análisis bajo demanda — v2.1
+
+**Diseñado por DevPoderSEO.** En WinCare, entra en **02 Red e IP → Centro avanzado de redes (v2.1)**. La ventana abre inmediatamente **sin analizar datos ni enviar paquetes**. Para cada diagnóstico primero eliges la pestaña, pulsas **Analizar pestaña** y esperas el resultado. Los adaptadores solo se consultan después de pulsar **Analizar adaptadores**. Las pruebas que envían tráfico requieren marcar **Tengo autorización para comprobar esta red** (desmarcada de fábrica) y confirmar por segunda vez.
+
+### Qué funciona en el programa portátil
+
+| Sección | Implementado | Alcance y limitaciones |
+|---|---|---|
+| **Red local** | Consulta pasiva ARP/vecinos IP y descubrimiento manual ICMP | Máximo **16 IP privadas de la subred seleccionada** por operación autorizada. No identifica todos los dispositivos; ICMP puede estar bloqueado |
+| **Fabricantes** | Identificación por prefijo MAC mediante catálogo **OUI local** | Copia Configuracion/fabricantes-oui.ejemplo.csv como fabricantes-oui.csv y completa prefijos Hex6;Fabricante desde fuente confiable. Sin catálogo, fabricante no identificado |
+| **Topología** | Árbol lógico gateway/vecinos por interfaz | **Inferencia L3**, no identifica enlaces físicos L2, puertos de switches, VLAN ni estado de enlaces |
+| **Rendimiento** | 5 pings manuales; latencia media, pérdida y jitter aproximado; contadores de ancho de banda del adaptador local | Muestra puntual, no SLA ni análisis de bytes por aplicación. Umbral de pérdida editable (20 % por defecto). Estados de revisión no envían notificaciones |
+| **Herramientas** | Ping, traceroute limitado a 8 saltos, consulta DNS A, una conexión TCP a puerto permitido, calculadora de subred | Ping, traceroute y TCP solo hacia la subred IPv4 privada elegida. DNS y consultas Wi-Fi requieren autorización |
+| **Wi-Fi** | Interfaz, estado, canal y señal según netsh; exploración voluntaria de redes cercanas | No es una medición confiable de SNR, interferencia ni mapa de calor por planta |
+| **Aplicaciones** | Conexiones TCP establecidas agrupadas por proceso/PID | Número de conexiones y destinos distintos **no equivalen a consumo de datos o porcentaje de ancho de banda** |
+| **Protocolos** | Tabla explícita de capacidades disponibles y dependencias faltantes | No activa sensores ni colectores inexistentes |
+| **Reportes** | HTML imprimible y CSV para dispositivos, muestras y procesos | Abre informe.html y usa Imprimir → Microsoft Print to PDF. Los resultados no equivalen a informes de SLA histórico |
+
+**No se han implementado todavía**, y por tanto la aplicación no los anuncia como operativos: SNMP v1/v2c/v3 remoto, LLDP/CDP, NetFlow, sFlow, IPFIX, recepción Syslog continua, inspección profunda de paquetes o captura PCAP integrada, identificación confiable de sistemas operativos remotos, heatmaps Wi-Fi medidos, correos/SMS/push automatizados, respaldos automáticos de configuraciones de switches, portal web/móvil o cloud. Estas funciones requieren una arquitectura distinta: servicio/agente de monitoreo persistente, control de acceso, sensores compatibles, protocolos y credenciales gestionados de forma segura, base de datos de series temporales y mecanismos de retención/consentimiento. **Un script portable sin servicios no puede medir disponibilidad 24/7 ni prometer alertas proactivas.**
+
+La heurística de seguridad no es un IDS. Una dirección MAC desconocida, un puerto abierto o tráfico elevado no demuestran una intrusión o DDoS; contrasta con inventario del cliente, registros de router/switch, firewall y herramientas EDR/IDS.
+
+### Rendimiento de la interfaz: cada diagnóstico se solicita por separado
+
+- **Inicio principal:** no abre ventanas UAC ni consulta Appx, servicios, drivers o DISM al abrir.
+- **Inventario Windows:** selecciona la pestaña (Apps Store, Programas, Controladores, etc.) y pulsa **Analizar pestaña**. Existe **Analizar todo (lento)** para cuando necesitas un inventario completo, con confirmación.
+- **Hardware:** elige una de las once secciones y pulsa **Analizar sección**. **Todo (lento)** es opcional.
+- **Seguridad de red:** selecciona pestaña y pulsa **Analizar pestaña**; el diagnóstico de interfaces/Wi-Fi y el centro avanzado tienen sus propios controles manuales.
+- **Mantenimiento:** pulsa **Analizar estado**, **Escanear categoría** o la herramienta concreta antes de realizar consultas o limpieza.
+- **Soporte PC:** pulsa **Revisar impresoras**, **Consultar eventos** o **Revisar inicio**. No analiza automáticamente al abrir.
+- **CCTV:** el catálogo local puede cargarse para editarlo; la consulta de adaptadores y las comprobaciones de cámara necesitan una acción explícita.
+- **Verificar WinCare:** no ejecuta el autodiagnóstico al abrir; pulsa **Verificar de nuevo**.
+
+Esto reduce el trabajo inicial, pero **un análisis manual de una categoría grande aún puede tardar**. No se ha implementado un motor de trabajos en segundo plano ni cancelación de cada consulta.
+
+### Seguridad de pruebas activas
+
+Las comprobaciones se limitan a IPv4 privada dentro de la subred del adaptador seleccionado, con límites de cantidad, tiempo y confirmación previa. No hay fuerza bruta, extracción de contraseñas, cambios automáticos de firewall, DNS o configuración de red, ni captura de contenidos. Las pruebas activas pueden ser visibles en logs del dispositivo; úsalas solo con permiso del responsable de la red.
+
+### Obtener el código y validar esta entrega
+
+Los archivos AdvancedNetwork.ps1 y AdvancedNetworkCore.ps1 ya forman parte de la rama main; el empaquetador está configurado para incluirlos en WinCarePortable-v2.1.zip, junto con el ejemplo OUI. **La validación automatizada de v2.1 está pendiente** porque las últimas ejecuciones de GitHub Actions terminaron antes de arrancar el runner de Windows. Revisa el resultado de Actions antes de usar un artefacto generado o ejecutar reparaciones en equipos de clientes.
+
+Puedes descargar el repositorio mediante Code → Download ZIP para inspeccionar y probar en una máquina Windows de laboratorio. No lo consideres certificado para producción hasta realizar pruebas reales del entorno, incluidas las vistas y las funciones de mantenimiento/desinstalación.
+
 ## Novedades de estabilidad — v2.0
 
 - **Detección de juegos Steam sin registro:** WinCare revisa hasta 32 bibliotecas locales y hasta 800 manifiestos locales, sin tocar archivos de Steam. Puede detectar Dota 2 y otros juegos aunque no aparezcan en la lista de aplicaciones de Windows. **La desinstalación se realiza mediante Steam con confirmación**, nunca borrando carpetas manualmente. Si se ejecuta con otro usuario administrador, recuerda que las bibliotecas de Steam pueden no ser las mismas.
 - **Verificar WinCare (módulo 08):** informa archivos faltantes, compatibilidad PowerShell 5.1/STA, permisos, carpeta de reportes y estado del catálogo Conservar/Opcional. Exporta CSV sin conexión externa. Un resultado correcto confirma la instalación básica, **no certifica que todos los dispositivos y acciones funcionen**.
-- **ZIP portátil verificado:** GitHub Actions genera WinCarePortable-v2.0.zip después de superar pruebas. Incluye archivos, manuales, ejemplo de recomendaciones, VERSION.txt y SHA256SUMS.txt. **Excluye** Reportes, reglas personales y catálogos CCTV privados.
+- **ZIP portátil verificado:** GitHub Actions genera WinCarePortable-v2.1.zip después de superar pruebas. Incluye archivos, manuales, ejemplo de recomendaciones, VERSION.txt y SHA256SUMS.txt. **Excluye** Reportes, reglas personales y catálogos CCTV privados.
 - **Compatibilidad Ventoy:** descomprime la carpeta WinCarePortable en la partición de datos del USB, inicia Windows y ejecuta INICIAR_WINCARE.bat. El menú de arranque de Ventoy no ejecuta PS1 o BAT.
 
 ### Actualizar desde una versión anterior
