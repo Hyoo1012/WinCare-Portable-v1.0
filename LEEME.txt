@@ -1,4 +1,4 @@
-WINCARE PORTABLE v1.1
+WINCARE PORTABLE v1.2
 DISEÑADO POR DEVPODERSEO
 =======================
 
@@ -12,8 +12,12 @@ DISEÑADO POR DEVPODERSEO
 5. Pulsa ANALIZAR PC para inventario del sistema.
 6. Pulsa SEGURIDAD DE RED E IP para ver conexiones TCP/UDP, procesos,
    equipos en caché ARP/ND, IP, DNS, gateway y perfiles de firewall.
-7. Exporta informes CSV antes de realizar cambios.
-8. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
+7. Pulsa HARDWARE Y SALUD para ver CPU, RAM, placa madre, BIOS/UEFI,
+   discos, unidades, GPU, red, batería, dispositivos e incidencias.
+   Abre msinfo32, dxdiag, Monitor de recursos, Visor de eventos y más.
+   El módulo no modifica hardware ni controladores.
+8. Exporta informes CSV antes de realizar cambios.
+9. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
    con habilitación y confirmación. No hay eliminaciones masivas.
 
 ADVERTENCIAS
@@ -23,6 +27,9 @@ ADVERTENCIAS
 - Verificación IP: solo envía ping si se confirma expresamente.
 - IP pública: consulta api.ipify.org solo después de confirmar.
 - No hay bloqueo automático, escaneo masivo ni monitoreo continuo.
+- El estado de salud y los contadores SMART pueden no estar disponibles.
+- Los registros históricos de Windows no prueban un fallo actual.
+- Administración de discos permite borrar particiones: usar con precaución.
 - Eliminar aplicaciones podría romper funciones o borrar configuraciones.
 - Respaldar datos antes de intervenir equipos.
 
