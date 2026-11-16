@@ -282,49 +282,85 @@ function Find-MCandidates([string]$Root,[int]$Days,[string]$Code) {
     if($count -ge $script:MMaxFiles){[void]$script:MErrors.Add('Se alcanzó el límite de '+$script:MMaxFiles+' entradas en '+$Code+'. Inventario parcial.')}
 }
 function Scan-MTemp {
+    if(-not $script:MCategoryPicker.SelectedItem){return}
+    $code=[string]$script:MCategoryPicker.SelectedItem.Code
     $script:MScan.Enabled=$false
     $script:MClean.Enabled=$false
+    $script:MSelectionUpdating=$true
     $script:MCandidates.Clear()
     $script:MFiles.Clear()
     $script:MErrors.Clear()
     $script:MScanFinished=$false
+    $script:MConfirm.Checked=$false
     try {
         $script:MRoots=@(Get-MRoots)
         $script:MAdmin=Test-MAdmin
-        foreach($root in $script:MRoots) {
-            if($root.Admin -and -not $script:MAdmin) {
-                [void]$script:MErrors.Add('La carpeta Windows\Temp requiere permiso de administrador. No se ha escaneado.')
+        $roots=@($script:MRoots | Where-Object { $_.Code -eq $code })
+        if($roots.Count -eq 0){[void]$script:MErrors.Add('La carpeta de esta categoría no existe o no está accesible. No se eliminó nada.')}
+        foreach($root in $roots) {
+            if($root.Admin -and -not $script:MAdmin){
+                [void]$script:MErrors.Add('Esta categoría requiere autorización de administrador. Reinicia WinCare y acepta el aviso UAC.')
                 continue
             }
-            if (-not (Test-Path -LiteralPath $root.Root -PathType Container)) {continue}
             $r=Get-Item -LiteralPath $root.Root -Force -ErrorAction SilentlyContinue
-            if($null -eq $r -or ($r.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-                [void]$script:MErrors.Add('Se omitió una ruta que es enlace o no accesible: '+$root.Code)
+            if($null -eq $r -or ($r.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){
+                [void]$script:MErrors.Add('Se omitió una carpeta inaccesible o que es enlace: '+$root.Code)
                 continue
             }
             Find-MCandidates $root.Root ([int]$root.Days) $root.Code
         }
         $script:MScanFinished=$true
         $total=[double]0
-        foreach($item in $script:MFiles.Values) { $total += [double]$item.Size }
-        $script:MStatus.Text=('{0} archivos temporales elegibles · {1} estimados · {2} advertencias · sin borrar nada' -f $script:MFiles.Count,(Format-MSize $total),$script:MErrors.Count)
-        if($script:MErrors.Count -gt 0) {
-            [void][Windows.Forms.MessageBox]::Show(($script:MErrors -join [Environment]::NewLine),'Análisis parcial de temporales','OK','Information')
+        foreach($item in $script:MFiles.Values){$total+=[double]$item.Size}
+        $script:MStatus.Text=('{0}: {1} archivos encontrados, {2} estimados; {3} advertencias. Aún no se borró nada.' -f $script:MCategoryPicker.SelectedItem.Label,$script:MFiles.Count,(Format-MSize $total),$script:MErrors.Count)
+        Write-MLog ('Vista previa '+$code+': '+$script:MFiles.Count+' candidatos; '+(Format-MSize $total))
+        if($script:MErrors.Count -gt 0){
+            [void][Windows.Forms.MessageBox]::Show(($script:MErrors -join [Environment]::NewLine),'Análisis parcial','OK','Information')
         }
-        Write-MLog ('Vista previa de limpieza: '+$script:MFiles.Count+' candidatos; '+(Format-MSize $total)+'.')
-    } finally { $script:MScan.Enabled=$true }
+    } finally {
+        $script:MSelectionUpdating=$false
+        $script:MScan.Enabled=$true
+        Update-MCleanEnabled
+    }
 }
 function Mark-MCandidates([bool]$Checked) {
-    foreach($row in $script:MCandidates.Rows) { $row['Seleccionar']=$Checked }
-    $script:MClean.Enabled=$Checked -and $script:MFiles.Count -gt 0
+    if(-not $script:MScanFinished){return}
+    $script:MSelectionUpdating=$true
+    try{
+        if($script:MGrid.IsCurrentCellDirty){[void]$script:MGrid.CommitEdit([Windows.Forms.DataGridViewDataErrorContexts]::Commit)}
+        [void]$script:MGrid.EndEdit()
+        foreach($row in $script:MCandidates.Rows){$row['Seleccionar']=$Checked}
+    }finally{
+        $script:MSelectionUpdating=$false
+        Update-MCleanEnabled
+    }
 }
 function Update-MCleanEnabled {
-    if(-not $script:MClean -or -not $script:MConfirm){return}
-    $hasItems=$false
+    if($script:MSelectionUpdating -or -not $script:MClean -or -not $script:MConfirm){return}
+    $count=0
+    $bytes=[double]0
     if($script:MScanFinished){
-        foreach($row in $script:MCandidates.Rows){ if([bool]$row['Seleccionar']) { $hasItems=$true; break } }
+        foreach($row in $script:MCandidates.Rows){
+            if(-not [bool]$row['Seleccionar']){continue}
+            $id=[string]$row['Identificador']
+            if($script:MFiles.ContainsKey($id)){
+                $count++
+                $bytes+=[double]$script:MFiles[$id].Size
+            }
+        }
     }
-    $script:MClean.Enabled=$hasItems -and $script:MConfirm.Checked
+    # Habilitar la acción si hay selección. La casilla sigue siendo obligatoria
+    # para ejecutar: al pulsar sin ella, se explica el paso pendiente.
+    $script:MClean.Enabled=($script:MScanFinished -and $count -gt 0)
+    if($script:MSelectedInfo){
+        if($count -eq 0){
+            $script:MSelectedInfo.Text='No hay archivos seleccionados. Escanea una categoría y marca los que quieras eliminar.'
+        }elseif($script:MConfirm.Checked){
+            $script:MSelectedInfo.Text=('{0} seleccionados ({1}). Puedes pulsar Limpiar; Windows solicitará confirmación.' -f $count,(Format-MSize $bytes))
+        }else{
+            $script:MSelectedInfo.Text=('{0} seleccionados ({1}). Marca la casilla de autorización para continuar.' -f $count,(Format-MSize $bytes))
+        }
+    }
 }
 function Test-MRevalidate($Candidate) {
     if($null -eq $Candidate){return $false}
