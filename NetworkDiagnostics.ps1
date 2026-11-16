@@ -478,7 +478,7 @@ $subtitle.Anchor='Top,Left,Right'
 $script:DForm.Controls.Add($subtitle)
 
 $script:DReadBtn=New-Object Windows.Forms.Button
-$script:DReadBtn.Text='Actualizar información local'
+$script:DReadBtn.Text='Analizar información local'
 $script:DReadBtn.Location=New-Object Drawing.Point(20,93)
 $script:DReadBtn.Size=New-Object Drawing.Size(210,34)
 $script:DReadBtn.BackColor=$script:DColors.Accent
