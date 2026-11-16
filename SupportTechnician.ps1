@@ -84,7 +84,7 @@ function Read-SEvents {
             $suggestion=if($evt.Id -in @(41,6008)){'Apagado inesperado; revisar energía, temperatura y registro anterior. No confirmar causa sin pruebas.'}
                         elseif($evt.Id -eq 1001){'Evento de error/volcado; revisar origen, fecha, controladores y soporte del fabricante.'}
                         else{'Servicio con incidente histórico. Revisar dependencia, errores anteriores y estado actual.'}
-            Add-SEvent ([datetime]$evt.TimeCreated).ToString('yyyy-MM-dd HH:mm') ([string]$evt.Id) ([string]$evt.ProviderName) ([string]$evt.LevelDisplayName) $summary $suggestion
+            Add-SEvent (([datetime]$evt.TimeCreated).ToString('yyyy-MM-dd HH:mm')) ([string]$evt.Id) ([string]$evt.ProviderName) ([string]$evt.LevelDisplayName) $summary $suggestion
         }
     }catch{
         Add-SEvent (Get-Date -Format 'yyyy-MM-dd HH:mm') 'Sin resultados' 'Windows Event Log' 'Información' $_.Exception.Message 'Sin eventos coincidentes o sin permisos. No significa que el equipo esté libre de fallos.'
