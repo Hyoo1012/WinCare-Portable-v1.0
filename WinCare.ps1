@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v1.6
+﻿# WinCare Portable - v1.8
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -541,7 +541,7 @@ function Request-RestorePoint {
 
 # ---- Interfaz portátil WinForms ----
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'WinCare Portable | Diagnóstico, limpieza y seguridad de red | DevPoderSEO'
+$form.Text = 'WinCare Portable v1.8 | Soporte PC, Redes y CCTV | DevPoderSEO'
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
 $form.Size = New-Object System.Drawing.Size(1340, 885)
 $form.MinimumSize = New-Object System.Drawing.Size(1185, 790)
@@ -569,7 +569,7 @@ $form.Controls.Add($brandLabel)
 $script:SubtitleLabel = New-Object System.Windows.Forms.Label
 $script:SubtitleLabel.Location = New-Object System.Drawing.Point(22, 55)
 $script:SubtitleLabel.Size = New-Object System.Drawing.Size(1190, 25)
-$script:SubtitleLabel.Text = 'Inventario, protección de aplicaciones y mantenimiento. Los módulos empiezan en modo solo lectura.'
+$script:SubtitleLabel.Text = 'Soporte Windows, limpieza, red, impresoras y CCTV. Diagnóstico pasivo y permisos antes de intervenir.'
 $script:SubtitleLabel.ForeColor = $script:Palette.Muted
 $script:SubtitleLabel.Anchor = 'Top,Left,Right'
 $form.Controls.Add($script:SubtitleLabel)
@@ -641,8 +641,8 @@ $form.Controls.Add($script:ChangeCheck)
 $script:ChangeCheck.Add_CheckedChanged({ Update-Detail })
 
 $script:TabControl = New-Object System.Windows.Forms.TabControl
-$script:TabControl.Location = New-Object System.Drawing.Point(20, 234)
-$script:TabControl.Size = New-Object System.Drawing.Size(1260, 458)
+$script:TabControl.Location = New-Object System.Drawing.Point(20, 277)
+$script:TabControl.Size = New-Object System.Drawing.Size(1260, 415)
 $script:TabControl.Anchor = 'Top,Bottom,Left,Right'
 $script:TabControl.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 $form.Controls.Add($script:TabControl)
@@ -715,7 +715,7 @@ foreach ($name in $script:Categories) {
 $script:TabControl.Add_SelectedIndexChanged({ Update-Search; Update-Detail })
 $legendLabel=New-Object System.Windows.Forms.Label
 $legendLabel.Text='Guía visual:  Conservar = protegido  |  Opcional = evaluar  |  Revisar = requiere criterio técnico'
-$legendLabel.Location=New-Object Drawing.Point(23,218)
+$legendLabel.Location=New-Object Drawing.Point(23,258)
 $legendLabel.Size=New-Object Drawing.Size(1120,17)
 $legendLabel.ForeColor=$script:Palette.Muted
 $form.Controls.Add($legendLabel)
@@ -784,7 +784,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.6 - Diseñado por DevPoderSEO
+WinCare Portable v1.8 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Solo permite quitar Appx expresamente aprobadas y MSI verificados.
@@ -802,6 +802,9 @@ WinCare Portable v1.6 - Diseñado por DevPoderSEO
 - Papelera opcional: doble confirmación, sin restauración garantizada.
 - Accesos técnicos: Liberador de espacio, Servicios, Tareas programadas, Visor de eventos, msconfig y Monitor de recursos.
 - Red v1.6: diagnóstico inteligente IP/DHCP/DNS/gateway, Wi-Fi, mapa lógico LAN y puertos autorizados.
+- Soporte v1.7: impresoras, Spooler bajo doble confirmación, eventos, aplicaciones de inicio y reportes por intervención.
+- CCTV v1.8: inventario local y mapa lógico; prueba ICMP y un puerto TCP por dispositivo privado con autorización.
+- Nunca se accede a cámaras, contraseñas ni vídeo; un puerto abierto no valida ONVIF, RTSP o grabación.
 - Las pruebas de red activas exigen consentimiento y solo sondeo de 16 IP privadas locales como máximo.
 - Hardware y salud consulta CPU, RAM, placa madre, BIOS, discos, GPU, red, batería y dispositivos.
 - Incluye msinfo32, dxdiag, Monitor de recursos y otras herramientas de Windows.
@@ -860,18 +863,14 @@ $maintenanceBtn.Add_Click({
     }
 })
 
-# Navegación principal: cinco módulos organizados por función y no por acciones peligrosas.
+# Navegación por módulos, dos filas de accesos grandes y didácticos.
 $technicianBtn = New-Object System.Windows.Forms.Button
 $technicianBtn.Text = '04  Taller técnico'
-$technicianBtn.BackColor = $script:Palette.Accent
-$technicianBtn.ForeColor = [Drawing.Color]::White
-$technicianBtn.FlatStyle = 'Flat'
 $form.Controls.Add($technicianBtn)
 $technicianBtn.Add_Click({
     $module=Join-Path $PSScriptRoot 'TechToolkit.ps1'
     if(-not (Test-Path -LiteralPath $module -PathType Leaf)){
-        [void][Windows.Forms.MessageBox]::Show('Falta TechToolkit.ps1. Descarga el proyecto completo.','Taller técnico','OK','Warning')
-        return
+        [void][Windows.Forms.MessageBox]::Show('Falta TechToolkit.ps1. Descarga el proyecto completo.','Taller técnico','OK','Warning');return
     }
     try{ & $module -Owner $form }
     catch{
@@ -881,38 +880,69 @@ $technicianBtn.Add_Click({
 })
 $policyBtn = New-Object System.Windows.Forms.Button
 $policyBtn.Text = '05  Recomendaciones'
-$policyBtn.BackColor = $script:Palette.Accent
-$policyBtn.ForeColor = [Drawing.Color]::White
-$policyBtn.FlatStyle = 'Flat'
 $form.Controls.Add($policyBtn)
 $policyBtn.Add_Click({ Open-WinCareRecommendations })
 
+$supportBtn = New-Object System.Windows.Forms.Button
+$supportBtn.Text = '06  Soporte PC'
+$form.Controls.Add($supportBtn)
+$supportBtn.Add_Click({
+    $module=Join-Path $PSScriptRoot 'SupportTechnician.ps1'
+    if(-not (Test-Path -LiteralPath $module -PathType Leaf)){
+        [void][Windows.Forms.MessageBox]::Show('Falta SupportTechnician.ps1. Descarga el proyecto completo.','Soporte técnico','OK','Warning');return
+    }
+    try { & $module -Owner $form }
+    catch{
+        Write-Audit ('SOPORTE PC: '+$_.Exception.Message)
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir soporte PC','OK','Error')
+    }
+})
+$cctvBtn = New-Object System.Windows.Forms.Button
+$cctvBtn.Text = '07  CCTV / NVR'
+$form.Controls.Add($cctvBtn)
+$cctvBtn.Add_Click({
+    $module=Join-Path $PSScriptRoot 'CCTVAudit.ps1'
+    $needed=Join-Path $PSScriptRoot 'CCTVCore.ps1'
+    if(-not (Test-Path -LiteralPath $module -PathType Leaf) -or -not (Test-Path -LiteralPath $needed -PathType Leaf)){
+        [void][Windows.Forms.MessageBox]::Show('Faltan archivos del módulo CCTV. Descarga el repositorio completo.','CCTV y NVR','OK','Warning');return
+    }
+    try { & $module -Owner $form }
+    catch{
+        Write-Audit ('CCTV: '+$_.Exception.Message)
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir CCTV','OK','Error')
+    }
+})
 $navBar=New-Object System.Windows.Forms.TableLayoutPanel
-$navBar.Location=New-Object Drawing.Point(20,154)
-$navBar.Size=New-Object Drawing.Size(1260,64)
+$navBar.Location=New-Object Drawing.Point(20,150)
+$navBar.Size=New-Object Drawing.Size(1260,103)
 $navBar.Anchor='Top,Left,Right'
-$navBar.RowCount=1
-$navBar.ColumnCount=5
+$navBar.RowCount=2
+$navBar.ColumnCount=4
 $navBar.BackColor=$script:Palette.Bg
-for($n=0;$n -lt 5;$n++){
-    [void]$navBar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent,[single]20)))
+for($n=0;$n -lt 4;$n++){
+    [void]$navBar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent,[single]25)))
+}
+for($n=0;$n -lt 2;$n++){
+    [void]$navBar.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent,[single]50)))
 }
 $hardwareBtn.Text='01  Hardware y salud'
 $networkBtn.Text='02  Red e IP'
 $maintenanceBtn.Text='03  Mantenimiento'
-$navButtons=@($hardwareBtn,$networkBtn,$maintenanceBtn,$technicianBtn,$policyBtn)
+$navButtons=@($hardwareBtn,$networkBtn,$maintenanceBtn,$technicianBtn,$policyBtn,$supportBtn,$cctvBtn)
 for($n=0;$n -lt $navButtons.Count;$n++){
     $button=$navButtons[$n]
     $form.Controls.Remove($button)
     $button.Dock='Fill'
     $button.Font=New-Object Drawing.Font('Segoe UI Semibold',10,[Drawing.FontStyle]::Bold)
-    $button.Margin=New-Object System.Windows.Forms.Padding(4,6,4,6)
+    $button.Margin=New-Object System.Windows.Forms.Padding(4,4,4,4)
     $button.Cursor=[Windows.Forms.Cursors]::Hand
     $button.FlatStyle='Flat'
     $button.FlatAppearance.BorderSize=0
-    $button.BackColor=[Drawing.Color]::FromArgb(34,70,106)
+    $button.BackColor=if($n -ge 5){[Drawing.Color]::FromArgb(43,89,119)}else{[Drawing.Color]::FromArgb(34,70,106)}
     $button.ForeColor=$script:Palette.Text
-    $navBar.Controls.Add($button,$n,0)
+    $col=[int]($n%4)
+    $row=[int][math]::Floor($n/4)
+    $navBar.Controls.Add($button,$col,$row)
 }
 $form.Controls.Add($navBar)
 $quickTips=New-Object System.Windows.Forms.ToolTip
@@ -921,6 +951,8 @@ $quickTips.SetToolTip($networkBtn,'Conexiones, IP, DNS, DHCP, gateway, Wi-Fi, de
 $quickTips.SetToolTip($maintenanceBtn,'Limpieza controlada, integridad, inicio y actualizaciones.')
 $quickTips.SetToolTip($technicianBtn,'Informe HTML para clientes, respaldo de controladores y reparación guiada.')
 $quickTips.SetToolTip($policyBtn,'Clasificar programas como Conservar u Opcional sin desbloquear componentes del sistema.')
+$quickTips.SetToolTip($supportBtn,'Impresoras, eventos críticos, aplicaciones de inicio, respaldos de configuración y registro de intervenciones.')
+$quickTips.SetToolTip($cctvBtn,'Catálogo seguro de cámaras IP y NVR, mapa lógico, comprobación autorizada de un equipo y reportes.')
 $quickTips.SetToolTip($script:SearchBox,'Buscar aplicaciones, fabricantes, riesgos y recomendaciones.')
 $quickTips.SetToolTip($script:ChangeCheck,'No habilites desinstalaciones hasta revisar el componente y tener respaldo.')
 
@@ -1024,9 +1056,9 @@ if ($SmokeTest) {
     }
     if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne '01  Hardware y salud') { throw 'Falta Hardware y salud.' }
     if ($null -eq $maintenanceBtn -or $maintenanceBtn.Text -ne '03  Mantenimiento') { throw 'Falta Mantenimiento.' }
-    if($navBar.ColumnCount -ne 5 -or $navBar.Controls.Count -ne 5){throw 'Navegación de módulos incompleta.'}
+    if($navBar.ColumnCount -ne 4 -or $navBar.RowCount -ne 2 -or $navBar.Controls.Count -ne 7){throw 'Navegación de siete módulos incompleta.'}
     if($actionBar.ColumnCount -ne 6 -or $actionBar.Controls.Count -ne 6){throw 'Barra de acciones incompleta.'}
-    if(-not $technicianBtn -or -not $policyBtn){throw 'Faltan Taller técnico y Recomendaciones.'}
+    if(-not $technicianBtn -or -not $policyBtn -or -not $supportBtn -or -not $cctvBtn){throw 'Faltan módulos de soporte o CCTV.'}
     # Probar de forma aislada el bloqueo de programas con recomendación Conservar.
     # No se consulta el equipo ni se desinstala software en esta prueba.
     $script:PolicyLoadOK=$true
@@ -1041,7 +1073,7 @@ if ($SmokeTest) {
     Reset-Inventory
     $script:PolicyRules=@()
     Write-Host 'OK: políticas Conservar bloquean; Opcional no desbloquea componentes del sistema.'
-    Write-Host 'OK: 7 tablas, recomendaciones, 5 módulos y 6 acciones de inventario.'
+    Write-Host 'OK: 7 tablas, recomendaciones, 7 módulos (dos filas) y 6 acciones de inventario.'
     $form.Dispose()
     return
 }
