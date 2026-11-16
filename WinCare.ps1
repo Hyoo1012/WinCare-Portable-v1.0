@@ -312,7 +312,8 @@ function Open-WinCareRecommendations {
 function Update-Detail {
     # Evita eventos de seleccion prematuros durante el montaje de la interfaz.
     if ($null -eq $script:DetailLabel -or $null -eq $script:RemoveButton -or $null -eq $script:TabControl) { return }
-    $script:DetailLabel.Text = 'Selecciona un elemento para ver sus consecuencias y el método disponible.'
+    $script:DetailLabel.Text = 'Selecciona un programa. Si es opcional, habilita la desinstalación y revisa las consecuencias.'
+    $script:RemoveButton.Text = 'Desinstalar seleccionado'
     $script:RemoveButton.Enabled = $false
     if (-not $script:TabControl.SelectedTab) { return }
     $selectedCategory = [string]$script:TabControl.SelectedTab.Text
@@ -330,7 +331,20 @@ function Update-Detail {
     $detail = [string]$row.Cells['Detalle'].Value
     $recommendation = [string]$row.Cells['Recomendación'].Value
     $script:DetailLabel.Text = ('{0} | Riesgo: {1} | Método: {2} | Guía: {3}' + [Environment]::NewLine + '{4}') -f $name, $risk, $action, $recommendation, $detail
-    $script:RemoveButton.Enabled = $script:ChangeCheck.Checked -and $script:PolicyLoadOK -and ($action -in @('Appx','MSI'))
+    $labels=@{
+        'Steam'='Desinstalar con Steam'
+        'Uninstaller'='Abrir desinstalador'
+        'MSI'='Desinstalar MSI'
+        'Appx'='Quitar aplicación'
+        'Windows'='Abrir en Windows'
+    }
+    if($labels.ContainsKey($action)){$script:RemoveButton.Text=[string]$labels[$action]}
+    if(-not $script:PolicyLoadOK -or $risk -eq 'Protegido'){return}
+    # Abrir configuración Windows no modifica nada; la acción final se confirma allí.
+    $script:RemoveButton.Enabled=($action -eq 'Windows') -or ($script:ChangeCheck.Checked -and $action -in @('Appx','MSI','Steam','Uninstaller'))
+    if(-not $script:ChangeCheck.Checked -and $action -in @('Appx','MSI','Steam','Uninstaller')){
+        $script:DetailLabel.Text += [Environment]::NewLine+'Para habilitar el botón, marca «Permitir desinstalación» arriba.'
+    }
 }
 
 function Update-Search {
@@ -609,6 +623,22 @@ $form.Controls.Add($script:AdminButton)
 $script:AdminButton.Add_Click({
     [void](Request-AdministratorAccess)
 })
+$steamBtn=New-Object System.Windows.Forms.Button
+$steamBtn.Text='Abrir Steam / juegos'
+$steamBtn.Location=New-Object System.Drawing.Point(917,102)
+$steamBtn.Size=New-Object System.Drawing.Size(190,33)
+$steamBtn.BackColor=[Drawing.Color]::FromArgb(52,99,145)
+$steamBtn.ForeColor=[Drawing.Color]::White
+$steamBtn.FlatStyle='Flat'
+$form.Controls.Add($steamBtn)
+$steamBtn.Add_Click({
+    try{
+        Open-WCSteamClient
+        [void][Windows.Forms.MessageBox]::Show('Si Dota 2 no figura en WinCare, puedes desinstalarlo desde Biblioteca de Steam: clic derecho en Dota 2 → Administrar → Desinstalar. Steam confirmará antes de quitar el juego.','Biblioteca de Steam','OK','Information')
+    }catch{
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'Steam no disponible','OK','Warning')
+    }
+})
 
 $networkBtn = New-Object System.Windows.Forms.Button
 $networkBtn.Text = 'Seguridad de red e IP'
@@ -632,7 +662,7 @@ $networkBtn.Add_Click({
 })
 
 $script:ChangeCheck = New-Object System.Windows.Forms.CheckBox
-$script:ChangeCheck.Text = 'Habilitar desinstalación (precaución)'
+$script:ChangeCheck.Text = 'Permitir desinstalación (con advertencia)'
 $script:ChangeCheck.Location = New-Object System.Drawing.Point(552, 102)
 $script:ChangeCheck.Size = New-Object System.Drawing.Size(350, 33)
 $script:ChangeCheck.ForeColor = [System.Drawing.Color]::FromArgb(255, 207, 105)
@@ -787,7 +817,9 @@ $helpBtn.Add_Click({
 WinCare Portable v1.9 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
-- Solo permite quitar Appx expresamente aprobadas y MSI verificados.
+- Permite quitar Appx opcionales, MSI validados, juegos Steam registrados y algunos asistentes interactivos comprobados.
+- Dota 2: si aparece en Programas, la acción Steam inicia el asistente; si no aparece, pulsa Abrir Steam / juegos.
+- Las aplicaciones no reconocidas abren Windows; no se ejecutan comandos arbitrarios del registro.
 - No desinstala servicios, controladores, características ni capacidades Windows.
 - Los programas no compatibles se gestionan desde Configuración de Windows.
 - Riesgo bajo NO significa riesgo cero: podrías perder datos de una aplicación.
@@ -954,7 +986,8 @@ $quickTips.SetToolTip($policyBtn,'Clasificar programas como Conservar u Opcional
 $quickTips.SetToolTip($supportBtn,'Impresoras, eventos críticos, aplicaciones de inicio, respaldos de configuración y registro de intervenciones.')
 $quickTips.SetToolTip($cctvBtn,'Catálogo seguro de cámaras IP y NVR, mapa lógico, comprobación autorizada de un equipo y reportes.')
 $quickTips.SetToolTip($script:SearchBox,'Buscar aplicaciones, fabricantes, riesgos y recomendaciones.')
-$quickTips.SetToolTip($script:ChangeCheck,'No habilites desinstalaciones hasta revisar el componente y tener respaldo.')
+$quickTips.SetToolTip($script:ChangeCheck,'Activa para quitar juegos de Steam, MSI, apps Store y desinstaladores interactivos. Abrir Configuración de Windows no lo requiere.')
+$quickTips.SetToolTip($steamBtn,'Abre el cliente Steam cuando un juego, por ejemplo Dota 2, no esté registrado en la lista de Windows.')
 
 # Acciones secundarias de inventario en un pie flexible y separado de los módulos.
 $actionBar=New-Object System.Windows.Forms.TableLayoutPanel
@@ -1058,7 +1091,7 @@ if ($SmokeTest) {
     if ($null -eq $maintenanceBtn -or $maintenanceBtn.Text -ne '03  Mantenimiento') { throw 'Falta Mantenimiento.' }
     if($navBar.ColumnCount -ne 4 -or $navBar.RowCount -ne 2 -or $navBar.Controls.Count -ne 7){throw 'Navegación de siete módulos incompleta.'}
     if($actionBar.ColumnCount -ne 6 -or $actionBar.Controls.Count -ne 6){throw 'Barra de acciones incompleta.'}
-    if(-not $technicianBtn -or -not $policyBtn -or -not $supportBtn -or -not $cctvBtn){throw 'Faltan módulos de soporte o CCTV.'}
+    if(-not $technicianBtn -or -not $policyBtn -or -not $supportBtn -or -not $cctvBtn -or -not $steamBtn){throw 'Faltan accesos a soporte, CCTV o Steam.'}
     # Probar de forma aislada el bloqueo de programas con recomendación Conservar.
     # No se consulta el equipo ni se desinstala software en esta prueba.
     $script:PolicyLoadOK=$true
