@@ -1,4 +1,5 @@
-﻿# WinCare Portable - Auditoria de red e IP
+﻿# WinCare Portable - Auditoria de red e IP v1.6
+# Diagnóstico inteligente integrado · Diseñado por DevPoderSEO
 # Diseñado por DevPoderSEO
 # Modulo para Windows PowerShell 5.1 y Windows 10/11.
 # Solo lectura: no mata procesos, no bloquea IP y no escanea otros hosts.
@@ -385,10 +386,39 @@ foreach ($a in $actions) {
     $script:NForm.Controls.Add($btn)
 }
 $script:NTab = New-Object Windows.Forms.TabControl
-$script:NTab.Location = New-Object Drawing.Point(20,142)
-$script:NTab.Size = New-Object Drawing.Size(1188,510)
+$script:NTab.Location = New-Object Drawing.Point(20,185)
+$script:NTab.Size = New-Object Drawing.Size(1188,468)
 $script:NTab.Anchor = 'Top,Bottom,Left,Right'
 $script:NForm.Controls.Add($script:NTab)
+
+$script:NDiagnosticButton=New-Object Windows.Forms.Button
+$script:NDiagnosticButton.Text='Abrir diagnóstico inteligente (v1.6)'
+$script:NDiagnosticButton.Location=New-Object Drawing.Point(20,141)
+$script:NDiagnosticButton.Size=New-Object Drawing.Size(298,33)
+$script:NDiagnosticButton.BackColor=$script:NColors.Accent
+$script:NDiagnosticButton.ForeColor=[Drawing.Color]::White
+$script:NDiagnosticButton.FlatStyle='Flat'
+$script:NForm.Controls.Add($script:NDiagnosticButton)
+$script:NDiagnosticButton.Add_Click({
+    $path=Join-Path $PSScriptRoot 'NetworkDiagnostics.ps1'
+    $core=Join-Path $PSScriptRoot 'NetworkDiagnosticsCore.ps1'
+    if(-not (Test-Path -LiteralPath $path -PathType Leaf) -or -not (Test-Path -LiteralPath $core -PathType Leaf)){
+        [void][Windows.Forms.MessageBox]::Show('No están todos los archivos de diagnóstico. Descarga el ZIP completo desde GitHub para ejecutar la versión 1.6.','Faltan componentes','OK','Warning')
+        return
+    }
+    try{ & $path -Owner $script:NForm }
+    catch{
+        Write-Audit ('DIAGNÓSTICO DE RED: '+$_.Exception.Message)
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo iniciar diagnóstico de red','OK','Error')
+    }
+})
+
+$diagNote=New-Object Windows.Forms.Label
+$diagNote.Text='IP · DHCP · DNS · gateway · Internet · Wi-Fi · mapa LAN · puertos · informes'
+$diagNote.Location=New-Object Drawing.Point(330,148)
+$diagNote.Size=New-Object Drawing.Size(870,25)
+$diagNote.ForeColor=$script:NColors.Muted
+$script:NForm.Controls.Add($diagNote)
 foreach ($kind in $script:NCategories) {
     $script:NTables[$kind] = New-NTable $script:NColumns[$kind]
     $tab = New-Object Windows.Forms.TabPage
@@ -448,7 +478,8 @@ if ($SmokeTest) {
             if ($null -eq $grid.Columns[[string]$dataColumn.ColumnName]) { throw ('Columna ausente en ' + $category) }
         }
     }
-    Write-Host 'OK: Inicialización de 5 tablas de red.'
+    if($script:NDiagnosticButton.Text -ne 'Abrir diagnóstico inteligente (v1.6)'){throw 'Falta acceso al nuevo diagnóstico.'}
+    Write-Host 'OK: Inicialización de 5 tablas de red y acceso diagnóstico v1.6.'
     $script:NForm.Dispose()
     return
 }
