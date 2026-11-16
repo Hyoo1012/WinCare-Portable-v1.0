@@ -324,7 +324,7 @@ function Run-PTool {
                 $ping=New-Object Net.NetworkInformation.Ping
                 try{
                     for($ttl=1;$ttl -le 8;$ttl++){
-                        $options=New-Object Net.NetworkInformation.PingOptions($ttl,$true)
+                        $options=New-Object -TypeName Net.NetworkInformation.PingOptions -ArgumentList @($ttl,$true)
                         try{
                             $reply=$ping.Send($target,850,([byte[]]@(0,1,2,3)),$options)
                             $hop=if($reply.Address){[string]$reply.Address}else{'*'}
