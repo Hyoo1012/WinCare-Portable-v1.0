@@ -19,4 +19,8 @@ Write-Host 'Probando Taller técnico sin leer equipos ni ejecutar reparaciones..
 & (Join-Path $root 'TechToolkit.ps1') -SmokeTest
 Write-Host 'Probando panel de diagnóstico de redes sin generar tráfico...'
 & (Join-Path $root 'NetworkDiagnostics.ps1') -SmokeTest
-Write-Host 'OK: siete interfaces construidas sin operaciones destructivas ni pruebas de red.'
+Write-Host 'Probando soporte PC v1.7 sin alterar servicio de impresión...'
+& (Join-Path $root 'SupportTechnician.ps1') -SmokeTest
+Write-Host 'Probando catálogo y diagnóstico CCTV v1.8 sin tráfico LAN...'
+& (Join-Path $root 'CCTVAudit.ps1') -SmokeTest
+Write-Host 'OK: nueve interfaces construidas sin operaciones destructivas ni tráfico.'
