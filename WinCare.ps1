@@ -1,4 +1,4 @@
-﻿# WinCare Portable - v1.8
+﻿# WinCare Portable - v1.9
 # Diseñado por DevPoderSEO
 # Desarrollo y diseño: DevPoderSEO
 # Windows PowerShell 5.1 / Windows 10-11 (ejecutar dentro del Windows instalado)
@@ -15,6 +15,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 . (Join-Path $PSScriptRoot 'AppRules.ps1')
+. (Join-Path $PSScriptRoot 'DesktopUninstall.ps1')
 
 $script:Palette = @{
     Bg = [System.Drawing.Color]::FromArgb(17, 24, 35)
@@ -191,19 +192,18 @@ function Read-ProgramInventory {
                 if ($seen.ContainsKey($id)) { continue }
                 $seen[$id] = $true
                 $publisher = [string]$p.Publisher
-                $msi = [string]$p.WindowsInstaller -eq '1' -and $key -match '^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$'
+                $plan=Get-WCDesktopUninstallPlan -Name $name -Key $key -UninstallString ([string]$p.UninstallString) -WindowsInstaller ([string]$p.WindowsInstaller)
                 $essential = ($name -match $script:CoreProgramPattern) -or ($publisher -match '(?i)^(Microsoft Corporation|Microsoft|Intel Corporation|NVIDIA Corporation|Advanced Micro Devices|Realtek)\s*$')
                 $risk = 'Revisar'
-                $action = 'Windows'
-                $detail = 'Usa la opción Desinstalar de Windows. No se ejecutan comandos de desinstalación desconocidos.'
+                $action = [string]$plan.Method
+                $detail = [string]$plan.Details
                 if ($essential) {
                     $risk = 'Protegido'
-                    $action = 'Windows'
-                    $detail = 'Posible dependencia, controlador o software esencial. La herramienta no permite su eliminación automática.'
-                } elseif ($msi) {
-                    $risk = 'Medio'
-                    $action = 'MSI'
-                    $detail = 'MSI identificado. Puede borrar configuraciones y afectar programas que dependan de él.'
+                    $action = 'Bloqueada'
+                    $detail = 'Posible dependencia, controlador o software esencial. WinCare no permite eliminarlo.'
+                } elseif ($action -in @('MSI','Steam','Uninstaller')) {
+                    $risk='Medio'
+                    $detail += ' Podrías perder configuraciones, archivos del juego o datos locales.'
                 }
                 Add-InventoryRecord 'Programas' 'Win32' $name ([string]$p.DisplayVersion) $publisher 'Registrado' $risk $action $detail $key ([string]$item.PSPath)
             } catch {
@@ -425,7 +425,7 @@ function Export-Inventory {
                 $records | Export-Csv -LiteralPath (Join-Path $folder $filename) -NoTypeInformation -Encoding UTF8
             }
         }
-        ('WinCare Portable v1.5 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
+        ('WinCare Portable v1.9 | Diseñado por DevPoderSEO' + [Environment]::NewLine + $script:SubtitleLabel.Text + [Environment]::NewLine + 'Advertencias:' + [Environment]::NewLine + ($script:Warnings -join [Environment]::NewLine)) | Set-Content -LiteralPath (Join-Path $folder 'resumen.txt') -Encoding UTF8
         Write-Audit ('EXPORTACION: ' + $folder)
         [void][System.Windows.Forms.MessageBox]::Show(('Inventario exportado en:' + [Environment]::NewLine + $folder),'Exportación completada','OK','Information')
         Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $folder + '"')
@@ -784,7 +784,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.8 - Diseñado por DevPoderSEO
+WinCare Portable v1.9 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Solo permite quitar Appx expresamente aprobadas y MSI verificados.
