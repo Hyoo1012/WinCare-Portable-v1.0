@@ -6,6 +6,8 @@ $root=Split-Path -Parent $PSScriptRoot
 if((Get-WCIPv4Scope '192.168.2.2') -ne 'Privada'){throw 'No reconoció rango LAN privado.'}
 if((Get-WCIPv4Scope '169.254.1.2') -ne 'Enlace local / APIPA'){throw 'No reconoció APIPA.'}
 if((Get-WCIPv4Scope '8.8.8.8') -eq 'Privada'){throw 'IP pública mal clasificada.'}
+if((Get-WCIPv4Scope '192.168.5') -ne 'Inválida'){throw 'IPv4 abreviada ambigua aceptada.'}
+if($null -ne (Convert-WCIPv4Number '127.1')){throw 'Conversión abreviada aceptada.'}
 if(-not (Test-WCIPv4Subnet '192.168.5.254' '192.168.5.20' 24)){throw 'Error de subred /24.'}
 if(Test-WCIPv4Subnet '192.168.6.254' '192.168.5.20' 24){throw 'Aceptó fuera de subred.'}
 $interface=[pscustomobject]@{Name='Test';IPv4='192.168.5.125';Prefix=24;Gateway='192.168.5.1';InterfaceIndex=1}
