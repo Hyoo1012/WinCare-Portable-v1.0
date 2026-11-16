@@ -990,8 +990,8 @@ if ($SmokeTest) {
     if (-not $script:AdminButton -or $script:AdminButton.Text -notin @('Admin activo','Solicitar permisos')) {
         throw 'Botón de elevación UAC no inicializado.'
     }
-    if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne 'Hardware y salud') { throw 'Falta Hardware y salud.' }
-    if ($null -eq $maintenanceBtn -or $maintenanceBtn.Text -ne 'Mantenimiento') { throw 'Falta Mantenimiento.' }
+    if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne '01  Hardware y salud') { throw 'Falta Hardware y salud.' }
+    if ($null -eq $maintenanceBtn -or $maintenanceBtn.Text -ne '03  Mantenimiento') { throw 'Falta Mantenimiento.' }
     if($navBar.ColumnCount -ne 5 -or $navBar.Controls.Count -ne 5){throw 'Navegación de módulos incompleta.'}
     if($actionBar.ColumnCount -ne 6 -or $actionBar.Controls.Count -ne 6){throw 'Barra de acciones incompleta.'}
     if(-not $technicianBtn -or -not $policyBtn){throw 'Faltan Taller técnico y Recomendaciones.'}
