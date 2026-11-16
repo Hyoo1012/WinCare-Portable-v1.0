@@ -3,7 +3,16 @@ name: Validar PowerShell
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - README.md
+      - LEEME.txt
   pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: win-care-powershell-validation
+  cancel-in-progress: true
 jobs:
   sintaxis-y-interfaz:
     runs-on: windows-latest
