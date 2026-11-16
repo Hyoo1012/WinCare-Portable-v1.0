@@ -1,4 +1,4 @@
-# WinCare Portable v1.8
+# WinCare Portable v1.9
 
 **Diseñado por DevPoderSEO**
 
@@ -41,6 +41,7 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | SupportTechnician.ps1 | Soporte v1.7: impresoras, eventos Windows, inicio, respaldos e intervenciones |
 | CCTVCore.ps1 | Catálogo portátil validado y reglas de seguridad de dispositivos CCTV |
 | CCTVAudit.ps1 | CCTV v1.8: inventario, mapa lógico y diagnóstico limitado de cámaras/NVR/DVR |
+| DesktopUninstall.ps1 | Desinstalación segura Steam, MSI y asistente interactivo con restricciones |
 | `Configuracion/recomendaciones.json` | Se crea al guardar la primera regla y se puede copiar con Ventoy |
 | `INICIAR_WINCARE.bat` | Iniciador local |
 | `LEEME.txt` | Guía rápida |
@@ -143,6 +144,36 @@ Accesos oficiales a Windows Update, Aplicaciones de inicio, Sensor de almacenami
 Los resultados se exportan a CSV en Reportes/mantenimiento-AAAAMMDD-HHMMSS. Los registros de auditoría se guardan localmente en auditoria.txt o auditoria-mantenimiento.txt. Los informes pueden contener datos técnicos privados del equipo.
 
 **Limitaciones:** cierto inventario y Windows\Temp requieren permisos elevados. La limpieza no reemplaza un respaldo y no detecta todos los problemas del computador. Las pruebas automatizadas verifican sintaxis, construcción de interfaz y exclusión de rutas/extensiones, no borrados reales de producción. Comprueba la operación en un equipo de prueba antes de utilizarla en equipos importantes.
+
+## Desinstalación de programas y juegos — v1.9
+
+Antes, WinCare solo activaba el botón para aplicaciones Store opcionales y MSI. En la versión 1.9 **también se admiten juegos de Steam y asistentes de desinstalación interactivos verificados**, y el resto de los programas puede abrirse desde la configuración oficial de Windows.
+
+**Dota 2 desde WinCare:**
+
+1. Abre WinCare, pulsa **Analizar PC** y ve a la pestaña **Programas**.
+2. Busca **Dota 2** y selecciónalo.
+3. Si Windows lo registró como **Steam App 570**, verás **Steam** en Acción y **Desinstalar con Steam** en el botón inferior.
+4. Marca **Permitir desinstalación (con advertencia)** arriba de la tabla.
+5. Haz clic en **Desinstalar con Steam**, revisa la advertencia y confirma. WinCare inicia el cliente Steam con la solicitud correspondiente al AppID 570, **sin borrar los archivos manualmente**.
+6. Completa el proceso en Steam y vuelve a pulsar **Analizar PC** al finalizar.
+
+**Si Dota 2 no aparece en Programas**, utiliza el nuevo botón **Abrir Steam / juegos** en la zona superior. En la Biblioteca de Steam haz clic derecho en Dota 2 → **Administrar → Desinstalar** y confirma. Steam es el responsable final de quitar los archivos del juego; WinCare no afirma que se haya eliminado solo por abrirlo.
+
+**Otros métodos:** Appx opcional (usuario actual), MSI por GUID revalidado, asistente interactivo con nombre y ubicación permitidos y firma digital válida, o el botón **Abrir en Windows** para finalizar allí el proceso. Nunca se ejecutan las cadenas arbitrarias de UninstallString ni los argumentos de desinstalación silenciosa. Los componentes de Windows, drivers y aplicaciones marcadas **Conservar** continúan protegidos. No hay desinstalación masiva.
+
+**Precaución:** quitar juegos y aplicaciones puede eliminar partidas guardadas localmente, archivos propios del programa, configuraciones o funciones dependientes. Haz respaldo y cierra los programas antes.
+
+## Limpieza segura: corrección del botón invisible
+
+En **03 Mantenimiento → Limpieza segura**, la barra superior de acciones se reorganizó con un diseño adaptable: **Escanear categoría**, **Seleccionar todos**, **Desmarcar**, casilla de autorización y botón rojo **Limpiar seleccionados**. El listado ahora ocupa una fila independiente y no puede desplazar el botón fuera del panel cuando cambie el tamaño de la ventana.
+
+1. Elige **Temporales del usuario** u otra categoría y pulsa **Escanear categoría**.
+2. Revisa los archivos encontrados, sus rutas, antigüedad y tamaño. Marca solo los que quieres quitar (o **Seleccionar todos**).
+3. Marca **He revisado los archivos y tengo respaldo si lo necesito**.
+4. Pulsa **Limpiar seleccionados** y confirma. Solo entonces WinCare revalida cada archivo y elimina aquellos que todavía cumplan las reglas.
+
+Los archivos abiertos, modificados o inaccesibles se omiten. La limpieza no elimina carpetas completas ni se inicia automáticamente. Las pruebas automatizadas verifican que el botón esté en la barra visible y que seleccionar y desmarcar cambien su disponibilidad. La eliminación real requiere una prueba manual autorizada.
 
 ## Recomendaciones personalizadas: qué conservar y qué desinstalar
 
