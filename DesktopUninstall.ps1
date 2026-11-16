@@ -102,15 +102,31 @@ function Get-WCSteamExecutable {
     return ''
 }
 
+function Assert-WCTrustedSteamExecutable([string]$Path) {
+    if([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Leaf)){
+        throw 'No se encontró el ejecutable de Steam.'
+    }
+    try{
+        $signature=Get-AuthenticodeSignature -FilePath $Path -ErrorAction Stop
+        if([string]$signature.Status -ne 'Valid' -or $null -eq $signature.SignerCertificate -or
+            [string]$signature.SignerCertificate.Subject -notmatch '(?i)Valve'){
+            throw 'El ejecutable no tiene una firma válida de Valve.'
+        }
+    }catch{
+        throw 'No se pudo confirmar la firma de Steam. WinCare no abrirá este ejecutable; usa la Biblioteca de Steam manualmente. Detalle: '+$_.Exception.Message
+    }
+}
 function Start-WCSteamUninstall([string]$AppId) {
     if($AppId -notmatch '^[1-9][0-9]{0,9}$'){throw 'ID de juego Steam inválido.'}
     $client=Get-WCSteamExecutable
     if(-not $client){throw 'No se encontró el ejecutable de Steam instalado. Abre Steam manualmente y desinstala el juego desde Biblioteca > Administrar > Desinstalar.'}
+    Assert-WCTrustedSteamExecutable $client
     [void](Start-Process -FilePath $client -ArgumentList ('steam://uninstall/'+$AppId) -ErrorAction Stop)
 }
 function Open-WCSteamClient {
     $client=Get-WCSteamExecutable
     if(-not $client){throw 'No se encontró Steam instalado. Puedes abrirlo manualmente desde Windows.'}
+    Assert-WCTrustedSteamExecutable $client
     [void](Start-Process -FilePath $client -ErrorAction Stop)
 }
 
