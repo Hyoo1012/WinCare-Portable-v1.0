@@ -1,4 +1,4 @@
-WINCARE PORTABLE v1.4
+WINCARE PORTABLE v1.5
 DISEÑADO POR DEVPODERSEO
 =======================
 
@@ -29,10 +29,22 @@ DISEÑADO POR DEVPODERSEO
     confirmacion; SFC/DISM solo verifican y no reparan.
 12. Exporta informes CSV antes de realizar cambios.
 
-13. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
+13. RECOMENDACIONES: selecciona un programa en Apps Store o Programas,
+    abre el modulo 05 y marca CONSERVAR o OPCIONAL; escribe el motivo,
+    guarda y vuelve al inventario. Se guarda en Configuracion.
+    CONSERVAR bloquea desinstalar desde WinCare. OPCIONAL no desbloquea
+    componentes protegidos.
+14. TALLER TECNICO: analiza el PC y exporta informe HTML/CSV,
+    incluye opcion de imprimir o guardar PDF desde el navegador,
+    exporta drivers con pnputil (requiere administrador) y ofrece
+    reparacion guiada con doble confirmacion.
+15. Solo las desinstalaciones Appx opcionales o MSI validado se permiten
    con habilitación y confirmación. No hay eliminaciones masivas.
 
 ADVERTENCIAS
+- Las recomendaciones no reemplazan la evaluación del técnico.
+- Antes de reparar o exportar drivers, comprueba respaldos y espacio libre.
+- SFC /scannow y DISM /RestoreHealth son reparaciones opcionales que pueden modificar Windows.
 - Los volcados y reportes archivados pueden servir para investigar fallos.
 - La limpieza es POR CATEGORIA, manual, no programada ni automática.
 - El Liberador de espacio de Windows permite gestionar otras categorias
