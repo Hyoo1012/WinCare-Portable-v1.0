@@ -536,8 +536,8 @@ function Request-RestorePoint {
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'WinCare Portable | Diagnóstico, limpieza y seguridad de red | DevPoderSEO'
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
-$form.Size = New-Object System.Drawing.Size(1260, 780)
-$form.MinimumSize = New-Object System.Drawing.Size(1130, 700)
+$form.Size = New-Object System.Drawing.Size(1340, 885)
+$form.MinimumSize = New-Object System.Drawing.Size(1185, 790)
 $form.BackColor = $script:Palette.Bg
 $form.ForeColor = $script:Palette.Text
 $form.Font = New-Object System.Drawing.Font('Segoe UI', 9)
@@ -545,14 +545,14 @@ $form.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 $header = New-Object System.Windows.Forms.Label
 $header.Location = New-Object System.Drawing.Point(20, 15)
 $header.Size = New-Object System.Drawing.Size(800, 32)
-$header.Text = 'WinCare Portable'
-$header.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 18, [System.Drawing.FontStyle]::Bold)
+$header.Text = 'WinCare Portable  |  Centro técnico'
+$header.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 19, [System.Drawing.FontStyle]::Bold)
 $header.ForeColor = $script:Palette.Text
 $form.Controls.Add($header)
 
 $brandLabel = New-Object System.Windows.Forms.Label
 $brandLabel.Text = 'Diseñado por DevPoderSEO'
-$brandLabel.Location = New-Object System.Drawing.Point(913, 19)
+$brandLabel.Location = New-Object System.Drawing.Point(982, 19)
 $brandLabel.Size = New-Object System.Drawing.Size(285, 27)
 $brandLabel.Anchor = 'Top,Right'
 $brandLabel.TextAlign = 'MiddleRight'
@@ -562,14 +562,14 @@ $form.Controls.Add($brandLabel)
 $script:SubtitleLabel = New-Object System.Windows.Forms.Label
 $script:SubtitleLabel.Location = New-Object System.Drawing.Point(22, 55)
 $script:SubtitleLabel.Size = New-Object System.Drawing.Size(1190, 25)
-$script:SubtitleLabel.Text = 'Inventario sin modificaciones | Windows 10 / 11 | Los elementos protegidos son solo informativos.'
+$script:SubtitleLabel.Text = 'Inventario, protección de aplicaciones y mantenimiento. Los módulos empiezan en modo solo lectura.'
 $script:SubtitleLabel.ForeColor = $script:Palette.Muted
 $script:SubtitleLabel.Anchor = 'Top,Left,Right'
 $form.Controls.Add($script:SubtitleLabel)
 
 $script:SearchBox = New-Object System.Windows.Forms.TextBox
-$script:SearchBox.Location = New-Object System.Drawing.Point(20, 98)
-$script:SearchBox.Size = New-Object System.Drawing.Size(300, 30)
+$script:SearchBox.Location = New-Object System.Drawing.Point(20, 104)
+$script:SearchBox.Size = New-Object System.Drawing.Size(350, 30)
 $script:SearchBox.BackColor = $script:Palette.Panel
 $script:SearchBox.ForeColor = $script:Palette.Text
 $script:SearchBox.BorderStyle = 'FixedSingle'
@@ -578,8 +578,8 @@ $script:SearchBox.Add_TextChanged({ Update-Search })
 
 $script:ScanButton = New-Object System.Windows.Forms.Button
 $script:ScanButton.Text = 'Analizar PC'
-$script:ScanButton.Location = New-Object System.Drawing.Point(335, 96)
-$script:ScanButton.Size = New-Object System.Drawing.Size(125, 31)
+$script:ScanButton.Location = New-Object System.Drawing.Point(384, 102)
+$script:ScanButton.Size = New-Object System.Drawing.Size(146, 33)
 $script:ScanButton.BackColor = $script:Palette.Accent
 $script:ScanButton.ForeColor = [System.Drawing.Color]::White
 $script:ScanButton.FlatStyle = 'Flat'
@@ -588,8 +588,8 @@ $script:ScanButton.Add_Click({ Refresh-Inventory })
 
 $script:AdminButton = New-Object System.Windows.Forms.Button
 $script:AdminButton.Text = 'Solicitar permisos'
-$script:AdminButton.Location = New-Object System.Drawing.Point(818, 96)
-$script:AdminButton.Size = New-Object System.Drawing.Size(141, 31)
+$script:AdminButton.Location = New-Object System.Drawing.Point(1122, 102)
+$script:AdminButton.Size = New-Object System.Drawing.Size(175, 33)
 $script:AdminButton.FlatStyle = 'Flat'
 $script:AdminButton.BackColor = [System.Drawing.Color]::FromArgb(87, 105, 130)
 $script:AdminButton.ForeColor = [System.Drawing.Color]::White
@@ -626,16 +626,16 @@ $networkBtn.Add_Click({
 
 $script:ChangeCheck = New-Object System.Windows.Forms.CheckBox
 $script:ChangeCheck.Text = 'Habilitar desinstalación (precaución)'
-$script:ChangeCheck.Location = New-Object System.Drawing.Point(482, 97)
-$script:ChangeCheck.Size = New-Object System.Drawing.Size(330, 30)
+$script:ChangeCheck.Location = New-Object System.Drawing.Point(552, 102)
+$script:ChangeCheck.Size = New-Object System.Drawing.Size(350, 33)
 $script:ChangeCheck.ForeColor = [System.Drawing.Color]::FromArgb(255, 207, 105)
 $script:ChangeCheck.Checked = $false
 $form.Controls.Add($script:ChangeCheck)
 $script:ChangeCheck.Add_CheckedChanged({ Update-Detail })
 
 $script:TabControl = New-Object System.Windows.Forms.TabControl
-$script:TabControl.Location = New-Object System.Drawing.Point(20, 140)
-$script:TabControl.Size = New-Object System.Drawing.Size(1200, 455)
+$script:TabControl.Location = New-Object System.Drawing.Point(20, 234)
+$script:TabControl.Size = New-Object System.Drawing.Size(1260, 458)
 $script:TabControl.Anchor = 'Top,Bottom,Left,Right'
 $script:TabControl.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 $form.Controls.Add($script:TabControl)
@@ -692,8 +692,8 @@ foreach ($name in $script:Categories) {
 $script:TabControl.Add_SelectedIndexChanged({ Update-Search; Update-Detail })
 
 $script:DetailLabel = New-Object System.Windows.Forms.Label
-$script:DetailLabel.Location = New-Object System.Drawing.Point(23, 600)
-$script:DetailLabel.Size = New-Object System.Drawing.Size(1180, 65)
+$script:DetailLabel.Location = New-Object System.Drawing.Point(23, 694)
+$script:DetailLabel.Size = New-Object System.Drawing.Size(1260, 52)
 $script:DetailLabel.Anchor = 'Bottom,Left,Right'
 $script:DetailLabel.ForeColor = $script:Palette.Muted
 $script:DetailLabel.Text = 'Selecciona un elemento para ver su riesgo y consecuencias.'
@@ -754,7 +754,7 @@ $helpBtn.Anchor = 'Bottom,Left'
 $form.Controls.Add($helpBtn)
 $helpBtn.Add_Click({
     $message = @'
-WinCare Portable v1.4 - Diseñado por DevPoderSEO
+WinCare Portable v1.5 - Diseñado por DevPoderSEO
 
 - Escanea el Windows en ejecución, NO imágenes ISO ni discos sin arrancar.
 - Solo permite quitar Appx expresamente aprobadas y MSI verificados.
@@ -828,38 +828,129 @@ $maintenanceBtn.Add_Click({
     }
 })
 
-# Fila de acciones adaptable a distintos tamaños de pantalla.
-$actionBar = New-Object System.Windows.Forms.TableLayoutPanel
-$actionBar.Location = New-Object System.Drawing.Point(20, 673)
-$actionBar.Size = New-Object System.Drawing.Size(1200, 36)
-$actionBar.Anchor = 'Bottom,Left,Right'
-$actionBar.RowCount = 1
-$actionBar.ColumnCount = 8
-$actionBar.GrowStyle = [System.Windows.Forms.TableLayoutPanelGrowStyle]::FixedSize
-for ($columnIndex = 0; $columnIndex -lt 8; $columnIndex++) {
-    [void]$actionBar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, [single]12.5)))
+# Navegación principal: cinco módulos organizados por función y no por acciones peligrosas.
+$technicianBtn = New-Object System.Windows.Forms.Button
+$technicianBtn.Text = '04  Taller técnico'
+$technicianBtn.BackColor = $script:Palette.Accent
+$technicianBtn.ForeColor = [Drawing.Color]::White
+$technicianBtn.FlatStyle = 'Flat'
+$form.Controls.Add($technicianBtn)
+$technicianBtn.Add_Click({
+    $module=Join-Path $PSScriptRoot 'TechToolkit.ps1'
+    if(-not (Test-Path -LiteralPath $module -PathType Leaf)){
+        [void][Windows.Forms.MessageBox]::Show('Falta TechToolkit.ps1. Descarga el proyecto completo.','Taller técnico','OK','Warning')
+        return
+    }
+    try{ & $module -Owner $form }
+    catch{
+        Write-Audit ('TALLER: '+$_.Exception.Message)
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'No se pudo abrir Taller técnico','OK','Error')
+    }
+})
+$policyBtn = New-Object System.Windows.Forms.Button
+$policyBtn.Text = '05  Recomendaciones'
+$policyBtn.BackColor = $script:Palette.Accent
+$policyBtn.ForeColor = [Drawing.Color]::White
+$policyBtn.FlatStyle = 'Flat'
+$form.Controls.Add($policyBtn)
+$policyBtn.Add_Click({ Open-WinCareRecommendations })
+
+$navBar=New-Object System.Windows.Forms.TableLayoutPanel
+$navBar.Location=New-Object Drawing.Point(20,154)
+$navBar.Size=New-Object Drawing.Size(1260,64)
+$navBar.Anchor='Top,Left,Right'
+$navBar.RowCount=1
+$navBar.ColumnCount=5
+$navBar.BackColor=$script:Palette.Bg
+for($n=0;$n -lt 5;$n++){
+    [void]$navBar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent,[single]20)))
 }
-$script:RemoveButton.Text = 'Quitar seleccionado'
-$windowsBtn.Text = 'Apps de Windows'
-$restoreBtn.Text = 'Restauración'
-$exportBtn.Text = 'Exportar CSV'
-$folderBtn.Text = 'Ver reportes'
-$helpBtn.Text = 'Ayuda'
-$hardwareBtn.Text = 'Hardware y salud'
-$maintenanceBtn.Text = 'Mantenimiento'
-$actionButtons = @($script:RemoveButton, $windowsBtn, $restoreBtn, $exportBtn, $folderBtn, $helpBtn, $hardwareBtn, $maintenanceBtn)
-for ($buttonIndex = 0; $buttonIndex -lt $actionButtons.Count; $buttonIndex++) {
-    $button = $actionButtons[$buttonIndex]
+$hardwareBtn.Text='01  Hardware y salud'
+$networkBtn.Text='02  Red e IP'
+$maintenanceBtn.Text='03  Mantenimiento'
+$navButtons=@($hardwareBtn,$networkBtn,$maintenanceBtn,$technicianBtn,$policyBtn)
+for($n=0;$n -lt $navButtons.Count;$n++){
+    $button=$navButtons[$n]
     $form.Controls.Remove($button)
-    $button.Dock = [System.Windows.Forms.DockStyle]::Fill
-    $button.Margin = New-Object System.Windows.Forms.Padding(3, 1, 3, 1)
-    $actionBar.Controls.Add($button, $buttonIndex, 0)
+    $button.Dock='Fill'
+    $button.Font=New-Object Drawing.Font('Segoe UI Semibold',10,[Drawing.FontStyle]::Bold)
+    $button.Margin=New-Object System.Windows.Forms.Padding(4,6,4,6)
+    $button.Cursor=[Windows.Forms.Cursors]::Hand
+    $button.FlatStyle='Flat'
+    $button.FlatAppearance.BorderSize=0
+    $button.BackColor=[Drawing.Color]::FromArgb(34,70,106)
+    $button.ForeColor=$script:Palette.Text
+    $navBar.Controls.Add($button,$n,0)
+}
+$form.Controls.Add($navBar)
+$quickTips=New-Object System.Windows.Forms.ToolTip
+$quickTips.SetToolTip($hardwareBtn,'CPU, RAM, BIOS, discos, dispositivos y salud del equipo.')
+$quickTips.SetToolTip($networkBtn,'Conexiones TCP/UDP, procesos, IP y equipos observados.')
+$quickTips.SetToolTip($maintenanceBtn,'Limpieza controlada, integridad, inicio y actualizaciones.')
+$quickTips.SetToolTip($technicianBtn,'Informe HTML para clientes, respaldo de controladores y reparación guiada.')
+$quickTips.SetToolTip($policyBtn,'Clasificar programas como Conservar u Opcional sin desbloquear componentes del sistema.')
+$quickTips.SetToolTip($script:SearchBox,'Buscar aplicaciones, fabricantes, riesgos y recomendaciones.')
+$quickTips.SetToolTip($script:ChangeCheck,'No habilites desinstalaciones hasta revisar el componente y tener respaldo.')
+
+# Acciones secundarias de inventario en un pie flexible y separado de los módulos.
+$actionBar=New-Object System.Windows.Forms.TableLayoutPanel
+$actionBar.Location=New-Object Drawing.Point(20,752)
+$actionBar.Size=New-Object Drawing.Size(1260,42)
+$actionBar.Anchor='Bottom,Left,Right'
+$actionBar.RowCount=1
+$actionBar.ColumnCount=6
+for($n=0;$n -lt 6;$n++){
+    [void]$actionBar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent,[single](100/6))))
+}
+$script:RemoveButton.Text='Desinstalar seleccionado'
+$windowsBtn.Text='Aplicaciones Windows'
+$restoreBtn.Text='Punto restauración'
+$exportBtn.Text='Exportar inventario'
+$folderBtn.Text='Ver reportes'
+$helpBtn.Text='Ayuda y seguridad'
+$actionButtons=@($script:RemoveButton,$windowsBtn,$restoreBtn,$exportBtn,$folderBtn,$helpBtn)
+for($n=0;$n -lt $actionButtons.Count;$n++){
+    $button=$actionButtons[$n]
+    $form.Controls.Remove($button)
+    $button.Dock='Fill'
+    $button.Margin=New-Object Windows.Forms.Padding(4,3,4,3)
+    $button.Font=New-Object Drawing.Font('Segoe UI',9,[Drawing.FontStyle]::Regular)
+    $button.FlatStyle='Flat'
+    $button.FlatAppearance.BorderSize=1
+    $button.FlatAppearance.BorderColor=$script:Palette.Border
+    $actionBar.Controls.Add($button,$n,0)
 }
 $form.Controls.Add($actionBar)
 
+# Encabezado tipo tarjeta, sin bordes rígidos ni menús saturados.
+$headerBar=New-Object System.Windows.Forms.Panel
+$headerBar.Location=New-Object Drawing.Point(0,0)
+$headerBar.Size=New-Object Drawing.Size(1320,90)
+$headerBar.Anchor='Top,Left,Right'
+$headerBar.BackColor=[Drawing.Color]::FromArgb(24,36,52)
+foreach($control in @($header,$brandLabel,$script:SubtitleLabel)){
+    $form.Controls.Remove($control)
+    $headerBar.Controls.Add($control)
+}
+$headerBar.Controls.SetChildIndex($header,0)
+$form.Controls.Add($headerBar)
+$form.Controls.SetChildIndex($headerBar,0)
+
+$detailPanel=New-Object System.Windows.Forms.Panel
+$detailPanel.Location=New-Object Drawing.Point(20,699)
+$detailPanel.Size=New-Object Drawing.Size(1260,44)
+$detailPanel.Anchor='Bottom,Left,Right'
+$detailPanel.BackColor=$script:Palette.Panel
+$form.Controls.Remove($script:DetailLabel)
+$script:DetailLabel.Location=New-Object Drawing.Point(11,4)
+$script:DetailLabel.Size=New-Object Drawing.Size(1230,39)
+$script:DetailLabel.Anchor='Top,Left,Right'
+$detailPanel.Controls.Add($script:DetailLabel)
+$form.Controls.Add($detailPanel)
+
 $script:StatusLabel = New-Object System.Windows.Forms.Label
-$script:StatusLabel.Location = New-Object System.Drawing.Point(22, 715)
-$script:StatusLabel.Size = New-Object System.Drawing.Size(1160, 22)
+$script:StatusLabel.Location = New-Object System.Drawing.Point(22, 815)
+$script:StatusLabel.Size = New-Object System.Drawing.Size(1260, 28)
 $script:StatusLabel.ForeColor = $script:Palette.Muted
 $script:StatusLabel.Anchor = 'Bottom,Left,Right'
 $script:StatusLabel.Text = 'Listo. Modo de solo lectura activado.'
@@ -901,8 +992,10 @@ if ($SmokeTest) {
     }
     if ($null -eq $hardwareBtn -or $hardwareBtn.Text -ne 'Hardware y salud') { throw 'Falta Hardware y salud.' }
     if ($null -eq $maintenanceBtn -or $maintenanceBtn.Text -ne 'Mantenimiento') { throw 'Falta Mantenimiento.' }
-    if ($actionBar.ColumnCount -ne 8 -or $actionBar.Controls.Count -ne 8) { throw 'Barra adaptable de acciones incompleta.' }
-    Write-Host 'OK: 7 tablas, barra adaptable con 8 acciones, hardware, mantenimiento y UAC.'
+    if($navBar.ColumnCount -ne 5 -or $navBar.Controls.Count -ne 5){throw 'Navegación de módulos incompleta.'}
+    if($actionBar.ColumnCount -ne 6 -or $actionBar.Controls.Count -ne 6){throw 'Barra de acciones incompleta.'}
+    if(-not $technicianBtn -or -not $policyBtn){throw 'Faltan Taller técnico y Recomendaciones.'}
+    Write-Host 'OK: 7 tablas, recomendaciones, 5 módulos y 6 acciones de inventario.'
     $form.Dispose()
     return
 }
