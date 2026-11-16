@@ -46,6 +46,8 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 | WinCareHealth.ps1 | Verifica módulos, permisos, reglas y capacidad de guardar informes |
 | AdvancedNetworkCore.ps1 | Valida subredes, estadísticas, OUI, capacidades y HTML seguro de redes |
 | AdvancedNetwork.ps1 | Centro avanzado por demanda: LAN, topología lógica, latencia/jitter, Wi-Fi, herramientas y reportes |
+| ValidarWinCare.ps1 / VALIDAR_WINCARE.bat | Autovalidación local de sintaxis e interfaces sin cambios en Windows |
+| CREAR_ZIP_VENTOY.bat | Compila el ZIP portátil cuando GitHub Actions no ejecuta runners |
 | Configuracion/fabricantes-oui.ejemplo.csv | Formato de catálogo OUI local que puedes completar manualmente |
 | packaging/CrearPaquete.ps1 | Genera ZIP, hashes SHA256 y excluye datos privados |
 | `Configuracion/recomendaciones.json` | Se crea al guardar la primera regla y se puede copiar con Ventoy |
@@ -74,6 +76,8 @@ El inicio elevado **no activa las desinstalaciones**: sigue siendo necesario mar
 
 **No se han implementado todavía**, y por tanto la aplicación no los anuncia como operativos: SNMP v1/v2c/v3 remoto, LLDP/CDP, NetFlow, sFlow, IPFIX, recepción Syslog continua, inspección profunda de paquetes o captura PCAP integrada, identificación confiable de sistemas operativos remotos, heatmaps Wi-Fi medidos, correos/SMS/push automatizados, respaldos automáticos de configuraciones de switches, portal web/móvil o cloud. Estas funciones requieren una arquitectura distinta: servicio/agente de monitoreo persistente, control de acceso, sensores compatibles, protocolos y credenciales gestionados de forma segura, base de datos de series temporales y mecanismos de retención/consentimiento. **Un script portable sin servicios no puede medir disponibilidad 24/7 ni prometer alertas proactivas.**
 
+En Red local se contrasta IP/MAC con Red-Confiables.json si existe. La columna **Confianza** distingue coincidencias, cambios y equipos pendientes de verificar. Nunca se bloquean dispositivos por esta clasificación. Los cambios de MAC pueden tener causas legítimas, como DHCP o reemplazo de equipos.
+
 La heurística de seguridad no es un IDS. Una dirección MAC desconocida, un puerto abierto o tráfico elevado no demuestran una intrusión o DDoS; contrasta con inventario del cliente, registros de router/switch, firewall y herramientas EDR/IDS.
 
 ### Rendimiento de la interfaz: cada diagnóstico se solicita por separado
@@ -92,6 +96,18 @@ Esto reduce el trabajo inicial, pero **un análisis manual de una categoría gra
 ### Seguridad de pruebas activas
 
 Las comprobaciones se limitan a IPv4 privada dentro de la subred del adaptador seleccionado, con límites de cantidad, tiempo y confirmación previa. No hay fuerza bruta, extracción de contraseñas, cambios automáticos de firewall, DNS o configuración de red, ni captura de contenidos. Las pruebas activas pueden ser visibles en logs del dispositivo; úsalas solo con permiso del responsable de la red.
+
+### Validar y generar un ZIP sin depender de Actions
+
+Si GitHub Actions termina antes de iniciar el runner de Windows, usa la ruta local, **sin instalar servicios ni enviar tráfico de red**:
+
+1. En GitHub selecciona **Code → Download ZIP** y extrae el repositorio completo en Windows.
+2. Ejecuta **VALIDAR_WINCARE.bat**: comprueba sintaxis, construye las ventanas en modo prueba y valida los límites básicos sin escanear, borrar ni desinstalar. Ante un error, copia el mensaje antes de utilizar WinCare.
+3. Si pasa la comprobación básica, ejecuta **CREAR_ZIP_VENTOY.bat**. Genera dist/WinCarePortable-v2.1.zip, con módulos, ejemplo OUI, VERSION.txt y SHA256SUMS.txt. No copia Reportes ni configuraciones personales.
+4. Extrae la carpeta WinCarePortable del ZIP en el USB Ventoy. Abre Windows y ejecuta INICIAR_WINCARE.bat.
+5. En la aplicación, abre **08 Verificar WinCare** y pulsa **Verificar de nuevo**. Comprueba en un equipo de prueba cada análisis antes de intervenir redes de clientes.
+
+La autovalidación es **estática y de interfaz**; no demuestra que un switch, cámara o impresora particular funcione. Para operar en clientes siguen siendo necesarias pruebas funcionales autorizadas y respaldos.
 
 ### Obtener el código y validar esta entrega
 
