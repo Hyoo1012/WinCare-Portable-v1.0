@@ -127,6 +127,8 @@ Accesos oficiales a Windows Update, Aplicaciones de inicio, Sensor de almacenami
 - **SFC /verifyonly** y **DISM /Online /Cleanup-Image /ScanHealth** se ejecutan manualmente tras confirmación, en una consola aparte con solicitud UAC. Son verificaciones, no reparaciones.
 - **Vaciar Papelera** es opcional y está separado de la limpieza temporal. Exige doble confirmación explícita. El programa no estima previamente el contenido ni puede garantizar su recuperación.
 
+**Otras acciones individuales para técnicos:** **Vaciar caché DNS** usa el mecanismo oficial de Windows y solo se ejecuta después de confirmar; limpia memoria de resolución, no espacio de disco. **Caché Microsoft Store** abre `wsreset.exe` tras autorización, que permite reiniciar la caché de Store sin desinstalar aplicaciones. Ninguna de estas acciones se ejecuta durante el escaneo. Si faltan permisos o herramientas nativas, se muestra el error.
+
 **Nunca borra:** Descargas, Documentos, archivos personales, Prefetch, WinSxS, caché de Windows Update, Defender, DriverStore, perfiles de navegador, drivers, servicios, registro o componentes protegidos. No existe limpieza automática o programada.
 
 Los resultados se exportan a CSV en Reportes/mantenimiento-AAAAMMDD-HHMMSS. Los registros de auditoría se guardan localmente en auditoria.txt o auditoria-mantenimiento.txt. Los informes pueden contener datos técnicos privados del equipo.
